@@ -1,0 +1,47 @@
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/tools/sdk/include
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/tools/sdk/lwip/include
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/cores/esp8266
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/variants/nodemcu
+-I/home/semard/Documents/Pruebas/Stepper Bipolar ESP8266 - MQTT - Intento 1/.piolibdeps/PubSubClient_ID89/src
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/ESP8266WiFi/src
+-I/home/semard/Documents/Pruebas/Stepper Bipolar ESP8266 - MQTT - Intento 1/src
+-I/home/semard/Documents/Pruebas/Stepper Bipolar ESP8266 - MQTT - Intento 1/lib/Stepper/src
+-I/home/semard/Documents/Pruebas/Stepper Bipolar ESP8266 - MQTT - Intento 1/.piolibdeps/PubSubClient_ID89/src
+-I/home/semard/Documents/Pruebas/Stepper Bipolar ESP8266 - MQTT - Intento 1/.piolibdeps/PubSubClient_ID89/src
+-I/home/semard/Documents/Pruebas/Stepper Bipolar ESP8266 - MQTT - Intento 1/.piolibdeps/Stepper_ID874/src
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/ArduinoOTA
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/DNSServer/src
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/EEPROM
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/ESP8266AVRISP/src
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/ESP8266HTTPClient/src
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/ESP8266HTTPUpdateServer/src
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/ESP8266SSDP
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/ESP8266WebServer/src
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/ESP8266WiFi/src
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/ESP8266WiFiMesh/src
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/ESP8266httpUpdate/src
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/ESP8266mDNS
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/Ethernet/src
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/GDBStub/src
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/Hash/src
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/SD/src
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/SPI
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/Servo/src
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/SoftwareSerial
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/TFT_Touch_Shield_V2
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/Ticker
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/Wire
+-I/home/semard/.platformio/packages/framework-arduinoespressif8266/libraries/esp8266/src
+-I/home/semard/.platformio/packages/toolchain-xtensa/xtensa-lx106-elf/include
+-I/home/semard/.platformio/packages/toolchain-xtensa/lib/gcc/xtensa-lx106-elf/4.8.2/include
+-I/home/semard/.platformio/packages/toolchain-xtensa/lib/gcc/xtensa-lx106-elf/4.8.2/include-fixed
+-I/home/semard/.platformio/packages/tool-unity
+-DARDUINO=20300
+-DLWIP_OPEN_SRC
+-DF_CPU=80000000L
+-D__ets__
+-DICACHE_FLASH
+-DPLATFORMIO=30401
+-DESP8266
+-DARDUINO_ARCH_ESP8266
+-DARDUINO_ESP8266_ESP12
