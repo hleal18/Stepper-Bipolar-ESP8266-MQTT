@@ -1,3 +1,9 @@
+/*
+  Permite probar el funcionamiento del TIP120 permitiendo
+  la conexión a tierra que se conecta con el PIN pertinente
+  del led conectado al puerto 4 del ESP.
+*/
+
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 #include <Stepper.h>
@@ -16,11 +22,8 @@ int value = 0;
 #define INSTEPPER "inStepper"
 #define OUTSTEPPER "outStepper"
 
-const int stepsPerRevolution = 200;
 const int tip120 = 5;
-
-
-Stepper myStepper(stepsPerRevolution, 13, 12, 14, 16);
+const int led = 4;
 
 void setup_wifi();
 void callback(char* topic, byte* payload, unsigned int length);
@@ -31,8 +34,8 @@ void setup() {
   client.setServer(mqtt_server, 1884);
   client.setCallback(callback);
   pinMode(tip120, OUTPUT);
-
-  myStepper.setSpeed(120);
+  pinMode(led, OUTPUT);
+  digitalWrite(led, HIGH);
 }
 
 void setup_wifi() {
@@ -67,14 +70,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
   // Switch on the LED if an 1 was received as first character
   if ((char)payload[0] == '+') {
-    myStepper.step(stepsPerRevolution);   // Turn the LED on (Note that LOW is the voltage level
-    client.publish(OUTSTEPPER, "Vuelta en sentido del reloj.");
     digitalWrite(tip120, HIGH);
-    
+    //digitalWrite(led, HIGH);
   } else if((char)payload[0] == '-'){
-    myStepper.step(-stepsPerRevolution);  // Turn the LED off by making the voltage HIGH
-    client.publish(OUTSTEPPER, "Vuelta en sentido contrario al reloj.");  }
     digitalWrite(tip120, LOW);
+    //digitalWrite(led, LOW);
+  }
 }
 
 void reconnect() {
