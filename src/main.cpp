@@ -1,3 +1,4 @@
+#include <ArduinoJson.h>
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 #include <Stepper.h>
@@ -7,17 +8,21 @@ const char *ssid = "SEMARD";
 const char *password = "SEMARD123";
 const char *mqtt_server = "192.168.0.200";
 
+StaticJsonBuffer<200> jsonWrite;
+StaticJsonBuffer<200> jsonRead;
+JsonObject &read = jsonRead.createObject();
+JsonObject &write = jsonWrite.createObject();
+
 WiFiClient espClient;
 PubSubClient client(espClient);
 long lastMsg = 0;
-char msg[50];
+char msg[] = "hola";
 int value = 0;
 
 #define INSTEPPER "inStepper"
 #define OUTSTEPPER "outStepper"
 
 const int stepsPerRevolution = 200;
-const int tip120 = 5;
 
 Stepper myStepper(stepsPerRevolution, 13, 12, 14, 16);
 
@@ -29,8 +34,6 @@ void setup() {
   setup_wifi();
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
-  pinMode(tip120, OUTPUT);
-
   myStepper.setSpeed(120);
 }
 
@@ -63,20 +66,46 @@ void callback(char *topic, byte *payload, unsigned int length) {
     Serial.print((char)payload[i]);
   }
   Serial.println();
+  char message[100];
+  int index = 0;
 
-  // Switch on the LED if an 1 was received as first character
-  if ((char)payload[0] == '+') {
-    myStepper.step(stepsPerRevolution); // Turn the LED on (Note that LOW is the
-                                        // voltage level
-    client.publish(OUTSTEPPER, "Vuelta en sentido del reloj.");
-    digitalWrite(tip120, HIGH);
-
-  } else if ((char)payload[0] == '-') {
-    myStepper.step(
-        -stepsPerRevolution); // Turn the LED off by making the voltage HIGH
-    client.publish(OUTSTEPPER, "Vuelta en sentido contrario al reloj.");
+  for (int i = 0; i < length; i++) {
+    message[i] = (char)*payload;
+    payload++;
   }
-  digitalWrite(tip120, LOW);
+  JsonObject &root = jsonRead.parseObject(message);
+  // read = jsonRead.parseObject(message);
+  int vueltas = 0;
+  String sentido = "";
+  vueltas = root["vueltas"].as<int>();
+  sentido = root["sentido"].as<String>();
+  if (root.success()) {
+    root.printTo(Serial);
+  } else {
+    Serial.println("No se reconoció el JSON");
+  }
+  // Switch on the LED if an 1 was received as first character
+  if (sentido == "clockwise") {
+    do {
+      myStepper.step(
+          stepsPerRevolution); // Turn the LED on (Note that LOW is the
+      vueltas--;
+    } while (vueltas > 0);
+    client.publish(OUTSTEPPER, "Vuelta en sentido del reloj.");
+    write["vueltas"] = 1;
+    write["sentido"] = "clockwise";
+    write.printTo(Serial);
+  } else if (sentido == "counterclockwise") {
+    do {
+      myStepper.step(
+          -stepsPerRevolution); // Turn the LED on (Note that LOW is the
+      vueltas--;
+    } while (vueltas > 0);
+    client.publish(OUTSTEPPER, "Vuelta en sentido contrario al reloj.");
+    write["vueltas"] = 1;
+    write["sentido"] = "counterclockwise";
+    write.printTo(Serial);
+  }
 }
 
 void reconnect() {
@@ -87,8 +116,6 @@ void reconnect() {
     if (client.connect("Pasito a pasito. Dale suavecito. Ba dum tss.", "semard",
                        "semard2017")) {
       Serial.println("connected");
-      // Once connected, publish an announcement...
-      // ... and resubscribe
       client.subscribe(INSTEPPER);
     } else {
       Serial.print("failed, rc=");
