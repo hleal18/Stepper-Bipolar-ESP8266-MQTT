@@ -27,7 +27,7 @@ void callback(char *topic, byte *payload, unsigned int length);
 void setup() {
   Serial.begin(115200);
   setup_wifi();
-  client.setServer(mqtt_server, 1884);
+  client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
   pinMode(tip120, OUTPUT);
 
