@@ -68,12 +68,12 @@ void callback(char *topic, byte *payload, unsigned int length) {
   Serial.println();
   char message[100];
   int index = 0;
-
+  StaticJsonBuffer<200> jsonBuffer;
   for (int i = 0; i < length; i++) {
     message[i] = (char)*payload;
     payload++;
   }
-  JsonObject &root = jsonRead.parseObject(message);
+  JsonObject &root = jsonBuffer.parseObject(message);
   // read = jsonRead.parseObject(message);
   int vueltas = 0;
   String sentido = "";
