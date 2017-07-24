@@ -8,7 +8,8 @@
   - publishes "hello world" to the topic "outTopic" every two seconds
   - subscribes to the topic "inTopic", printing out any messages
     it receives. NB - it assumes the received payloads are strings not binary
-  - If the first character of the topic "inTopic" is an 1, switch ON the ESP Led,
+  - If the first character of the topic "inTopic" is an 1, switch ON the ESP
+ Led,
     else switch it off
 
  It will reconnect to the server if the connection is lost using a blocking
@@ -16,9 +17,11 @@
  achieve the same result without blocking the main loop.
 
  To install the ESP8266 board, (using Arduino 1.6.4+):
-  - Add the following 3rd party board manager under "File -> Preferences -> Additional Boards Manager URLs":
+  - Add the following 3rd party board manager under "File -> Preferences ->
+ Additional Boards Manager URLs":
        http://arduino.esp8266.com/stable/package_esp8266com_index.json
-  - Open the "Tools -> Board -> Board Manager" and click install for the ESP8266"
+  - Open the "Tools -> Board -> Board Manager" and click install for the
+ ESP8266"
   - Select your ESP8266 in "Tools -> Board"
 
 */
@@ -28,9 +31,9 @@
 #include <Stepper.h>
 // Update these with values suitable for your network.
 
-const char* ssid = "SEMARD";
-const char* password = "SEMARD123";
-const char* mqtt_server = "192.168.0.200";
+const char *ssid = "SEMARD";
+const char *password = "SEMARD123";
+const char *mqtt_server = "192.168.0.200";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -43,18 +46,16 @@ int value = 0;
 
 const int stepsPerRevolution = 200;
 
-
-
 Stepper myStepper(stepsPerRevolution, 13, 12, 14, 16);
 
 void setup_wifi();
-void callback(char* topic, byte* payload, unsigned int length);
+void callback(char *topic, byte *payload, unsigned int length);
 
 void setup() {
-  pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
+  pinMode(BUILTIN_LED, OUTPUT); // Initialize the BUILTIN_LED pin as an output
   Serial.begin(115200);
   setup_wifi();
-  client.setServer(mqtt_server, 1884);
+  client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
 
   myStepper.setSpeed(120);
@@ -81,7 +82,7 @@ void setup_wifi() {
   Serial.println(WiFi.localIP());
 }
 
-void callback(char* topic, byte* payload, unsigned int length) {
+void callback(char *topic, byte *payload, unsigned int length) {
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
@@ -92,14 +93,15 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
   // Switch on the LED if an 1 was received as first character
   if ((char)payload[0] == '+') {
-    myStepper.step(stepsPerRevolution);   // Turn the LED on (Note that LOW is the voltage level
+    myStepper.step(stepsPerRevolution); // Turn the LED on (Note that LOW is the
+                                        // voltage level
     client.publish(OUTSTEPPER, "Vuelta en sentido del reloj.");
 
-  } else if((char)payload[0] == '-'){
-    myStepper.step(-stepsPerRevolution);  // Turn the LED off by making the voltage HIGH
+  } else if ((char)payload[0] == '-') {
+    myStepper.step(
+        -stepsPerRevolution); // Turn the LED off by making the voltage HIGH
     client.publish(OUTSTEPPER, "Vuelta en sentido contrario al reloj.");
   }
-
 }
 
 void reconnect() {
@@ -107,7 +109,7 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    if (client.connect("ESP8266Client")) {
+    if (client.connect("ESP8266Client", "semard", "semard2017")) {
       Serial.println("connected");
       // Once connected, publish an announcement...
       // ... and resubscribe
