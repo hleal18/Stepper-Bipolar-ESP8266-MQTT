@@ -15,12 +15,12 @@ JsonObject &write = jsonWrite.createObject();
 
 WiFiClient espClient;
 PubSubClient client(espClient);
-long lastMsg = 0;
-char msg[] = "hola";
-int value = 0;
 
 #define INSTEPPER "inStepper"
 #define OUTSTEPPER "outStepper"
+#define CLOCKWISE "clockwise"
+#define COUNTERCLOCKWISE "counterclockwise"
+
 
 const int stepsPerRevolution = 200;
 
@@ -59,53 +59,46 @@ void setup_wifi() {
 }
 
 void callback(char *topic, byte *payload, unsigned int length) {
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("] ");
-  for (int i = 0; i < length; i++) {
-    Serial.print((char)payload[i]);
-  }
-  Serial.println();
+  int vueltas = 0, index = 0;
+  char* json;
+  String sentido = "";
   char message[100];
-  int index = 0;
+
   StaticJsonBuffer<200> jsonBuffer;
-  for (int i = 0; i < length; i++) {
+
+  for(int i = 0; i < length; i++){
     message[i] = (char)*payload;
     payload++;
   }
-  JsonObject &root = jsonBuffer.parseObject(message);
-  // read = jsonRead.parseObject(message);
-  int vueltas = 0;
-  String sentido = "";
+
+  JsonObject& root = jsonBuffer.parseObject(message);
+
   vueltas = root["vueltas"].as<int>();
   sentido = root["sentido"].as<String>();
-  if (root.success()) {
+
+  if(!root.success()){
+    Serial.println("Se recibió correctamente la instrucción.");
     root.printTo(Serial);
-  } else {
-    Serial.println("No se reconoció el JSON");
   }
-  // Switch on the LED if an 1 was received as first character
-  if (sentido == "clockwise") {
+
+  if (sentido == CLOCKWISE) {
     do {
-      myStepper.step(
-          stepsPerRevolution); // Turn the LED on (Note that LOW is the
+      myStepper.step(stepsPerRevolution);
       vueltas--;
     } while (vueltas > 0);
-    client.publish(OUTSTEPPER, "Vuelta en sentido del reloj.");
     write["vueltas"] = 1;
-    write["sentido"] = "clockwise";
-    write.printTo(Serial);
-  } else if (sentido == "counterclockwise") {
+    write["sentido"] = CLOCKWISE;
+  } else if (sentido == COUNTERCLOCKWISE) {
     do {
-      myStepper.step(
-          -stepsPerRevolution); // Turn the LED on (Note that LOW is the
+      myStepper.step(-stepsPerRevolution);
       vueltas--;
     } while (vueltas > 0);
-    client.publish(OUTSTEPPER, "Vuelta en sentido contrario al reloj.");
     write["vueltas"] = 1;
-    write["sentido"] = "counterclockwise";
-    write.printTo(Serial);
+    write["sentido"] = COUNTERCLOCKWISE;
   }
+
+  write.printTo(json, 100);
+  client.publish(OUTSTEPPER, json);
 }
 
 void reconnect() {
