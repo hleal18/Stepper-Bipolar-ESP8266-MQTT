@@ -62,10 +62,6 @@ void callback(char *topic, byte *payload, unsigned int length) {
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
-  for (int i = 0; i < length; i++) {
-    Serial.print((char)payload[i]);
-  }
-  Serial.println();
   char message[100];
   int index = 0;
   StaticJsonBuffer<200> jsonBuffer;
@@ -91,21 +87,23 @@ void callback(char *topic, byte *payload, unsigned int length) {
           stepsPerRevolution); // Turn the LED on (Note that LOW is the
       vueltas--;
     } while (vueltas > 0);
-    client.publish(OUTSTEPPER, "Vuelta en sentido del reloj.");
+    // client.publish(OUTSTEPPER, "Vuelta en sentido del reloj.");
     write["vueltas"] = 1;
     write["sentido"] = "clockwise";
-    write.printTo(Serial);
   } else if (sentido == "counterclockwise") {
     do {
       myStepper.step(
           -stepsPerRevolution); // Turn the LED on (Note that LOW is the
       vueltas--;
     } while (vueltas > 0);
-    client.publish(OUTSTEPPER, "Vuelta en sentido contrario al reloj.");
     write["vueltas"] = 1;
     write["sentido"] = "counterclockwise";
-    write.printTo(Serial);
   }
+  char json[100];
+  Serial.println("Mensaje");
+  write.printTo(json);
+  Serial.println(json);
+  client.publish(OUTSTEPPER, json);
 }
 
 void reconnect() {
