@@ -15,12 +15,11 @@ JsonObject &write = jsonWrite.createObject();
 
 WiFiClient espClient;
 PubSubClient client(espClient);
-long lastMsg = 0;
-char msg[] = "hola";
-int value = 0;
 
 #define INSTEPPER "inStepper"
 #define OUTSTEPPER "outStepper"
+#define CLOCKWISE "clockwise"
+#define COUNTERCLOCKWISE "counterclockwise"
 
 const int stepsPerRevolution = 200;
 
@@ -34,6 +33,8 @@ void setup() {
   setup_wifi();
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
+  ESP.wdtDisable();
+  ESP.wdtEnable(80);
   myStepper.setSpeed(120);
 }
 
@@ -59,27 +60,34 @@ void setup_wifi() {
 }
 
 void callback(char *topic, byte *payload, unsigned int length) {
+<<<<<<< HEAD
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
+=======
+  int vueltas = 0, index = 0, vueltasCopy = 0;
+  int sentidoPasos = stepsPerRevolution;
+  char json[100];
+  String sentido = "";
+>>>>>>> json-mods
   char message[100];
-  int index = 0;
+
   StaticJsonBuffer<200> jsonBuffer;
   for (int i = 0; i < length; i++) {
     message[i] = (char)*payload;
     payload++;
   }
   JsonObject &root = jsonBuffer.parseObject(message);
-  // read = jsonRead.parseObject(message);
-  int vueltas = 0;
-  String sentido = "";
   vueltas = root["vueltas"].as<int>();
   sentido = root["sentido"].as<String>();
-  if (root.success()) {
+  vueltasCopy = vueltas;
+
+  if (!root.success()) {
+    Serial.println(
+        "Hay un error en la instrucción. Revise de nuevo el formato.");
     root.printTo(Serial);
-  } else {
-    Serial.println("No se reconoció el JSON");
   }
+<<<<<<< HEAD
   // Switch on the LED if an 1 was received as first character
   if (sentido == "clockwise") {
     do {
@@ -103,6 +111,23 @@ void callback(char *topic, byte *payload, unsigned int length) {
   Serial.println("Mensaje");
   write.printTo(json);
   Serial.println(json);
+=======
+
+  if (sentido == CLOCKWISE) {
+    write["sentido"] = CLOCKWISE;
+  } else if (sentido == COUNTERCLOCKWISE) {
+    sentidoPasos *= -1;
+    write["sentido"] = COUNTERCLOCKWISE;
+  }
+  write["vueltas"] = vueltasCopy;
+
+  do {
+    myStepper.step(sentidoPasos);
+    vueltas--;
+  } while (vueltas > 0);
+
+  write.printTo(json);
+>>>>>>> json-mods
   client.publish(OUTSTEPPER, json);
 }
 
