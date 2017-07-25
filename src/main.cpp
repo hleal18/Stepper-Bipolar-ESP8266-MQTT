@@ -61,7 +61,7 @@ void setup_wifi() {
 
 void callback(char *topic, byte *payload, unsigned int length) {
   int vueltas = 0, index = 0;
-  char *json;
+  char json[100];
   String sentido = "";
   char message[100];
 
@@ -87,7 +87,6 @@ void callback(char *topic, byte *payload, unsigned int length) {
     do {
       myStepper.step(stepsPerRevolution);
       vueltas--;
-      ESP.wdtFeed();
     } while (vueltas > 0);
     write["vueltas"] = 1;
     write["sentido"] = CLOCKWISE;
@@ -95,15 +94,14 @@ void callback(char *topic, byte *payload, unsigned int length) {
     do {
       myStepper.step(-stepsPerRevolution);
       vueltas--;
-      ESP.wdtFeed();
     } while (vueltas > 0);
     write["vueltas"] = 1;
     write["sentido"] = COUNTERCLOCKWISE;
   }
 
-  write.printTo(json, 100);
+  write.printTo(json);
   Serial.println("Mensaje");
-  Serial.println(json[0]);
+  Serial.println(json);
   client.publish(OUTSTEPPER, json);
 }
 
