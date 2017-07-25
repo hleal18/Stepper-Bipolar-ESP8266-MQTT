@@ -21,7 +21,6 @@ PubSubClient client(espClient);
 #define CLOCKWISE "clockwise"
 #define COUNTERCLOCKWISE "counterclockwise"
 
-
 const int stepsPerRevolution = 200;
 
 Stepper myStepper(stepsPerRevolution, 13, 12, 14, 16);
@@ -34,6 +33,8 @@ void setup() {
   setup_wifi();
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
+  ESP.wdtDisable();
+  ESP.wdtEnable(80);
   myStepper.setSpeed(120);
 }
 
@@ -60,24 +61,25 @@ void setup_wifi() {
 
 void callback(char *topic, byte *payload, unsigned int length) {
   int vueltas = 0, index = 0;
-  char* json;
+  char *json;
   String sentido = "";
   char message[100];
 
   StaticJsonBuffer<200> jsonBuffer;
 
-  for(int i = 0; i < length; i++){
+  for (int i = 0; i < length; i++) {
     message[i] = (char)*payload;
     payload++;
   }
 
-  JsonObject& root = jsonBuffer.parseObject(message);
+  JsonObject &root = jsonBuffer.parseObject(message);
 
   vueltas = root["vueltas"].as<int>();
   sentido = root["sentido"].as<String>();
 
-  if(!root.success()){
-    Serial.println("Se recibió correctamente la instrucción.");
+  if (!root.success()) {
+    Serial.println(
+        "Hay un error en la instrucción. Revise de nuevo el formato.");
     root.printTo(Serial);
   }
 
@@ -85,6 +87,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
     do {
       myStepper.step(stepsPerRevolution);
       vueltas--;
+      ESP.wdtFeed();
     } while (vueltas > 0);
     write["vueltas"] = 1;
     write["sentido"] = CLOCKWISE;
@@ -92,12 +95,15 @@ void callback(char *topic, byte *payload, unsigned int length) {
     do {
       myStepper.step(-stepsPerRevolution);
       vueltas--;
+      ESP.wdtFeed();
     } while (vueltas > 0);
     write["vueltas"] = 1;
     write["sentido"] = COUNTERCLOCKWISE;
   }
 
   write.printTo(json, 100);
+  Serial.println("Mensaje");
+  Serial.println(json[0]);
   client.publish(OUTSTEPPER, json);
 }
 
