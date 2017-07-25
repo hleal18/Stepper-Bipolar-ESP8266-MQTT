@@ -8,11 +8,6 @@ const char *ssid = "SEMARD";
 const char *password = "SEMARD123";
 const char *mqtt_server = "192.168.0.200";
 
-StaticJsonBuffer<200> jsonWrite;
-StaticJsonBuffer<200> jsonRead;
-JsonObject &read = jsonRead.createObject();
-JsonObject &write = jsonWrite.createObject();
-
 WiFiClient espClient;
 PubSubClient client(espClient);
 
@@ -33,8 +28,6 @@ void setup() {
   setup_wifi();
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
-  ESP.wdtDisable();
-  ESP.wdtEnable(80);
   myStepper.setSpeed(120);
 }
 
@@ -60,19 +53,16 @@ void setup_wifi() {
 }
 
 void callback(char *topic, byte *payload, unsigned int length) {
-<<<<<<< HEAD
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("] ");
-=======
-  int vueltas = 0, index = 0, vueltasCopy = 0;
+  int vueltas = 0, index = 0, vueltasActual = 0;
   int sentidoPasos = stepsPerRevolution;
   char json[100];
   String sentido = "";
->>>>>>> json-mods
   char message[100];
 
   StaticJsonBuffer<200> jsonBuffer;
+  StaticJsonBuffer<200> jsonWrite;
+  JsonObject &write = jsonWrite.createObject();
+
   for (int i = 0; i < length; i++) {
     message[i] = (char)*payload;
     payload++;
@@ -80,38 +70,13 @@ void callback(char *topic, byte *payload, unsigned int length) {
   JsonObject &root = jsonBuffer.parseObject(message);
   vueltas = root["vueltas"].as<int>();
   sentido = root["sentido"].as<String>();
-  vueltasCopy = vueltas;
 
   if (!root.success()) {
     Serial.println(
         "Hay un error en la instrucción. Revise de nuevo el formato.");
     root.printTo(Serial);
+    return;
   }
-<<<<<<< HEAD
-  // Switch on the LED if an 1 was received as first character
-  if (sentido == "clockwise") {
-    do {
-      myStepper.step(
-          stepsPerRevolution); // Turn the LED on (Note that LOW is the
-      vueltas--;
-    } while (vueltas > 0);
-    // client.publish(OUTSTEPPER, "Vuelta en sentido del reloj.");
-    write["vueltas"] = 1;
-    write["sentido"] = "clockwise";
-  } else if (sentido == "counterclockwise") {
-    do {
-      myStepper.step(
-          -stepsPerRevolution); // Turn the LED on (Note that LOW is the
-      vueltas--;
-    } while (vueltas > 0);
-    write["vueltas"] = 1;
-    write["sentido"] = "counterclockwise";
-  }
-  char json[100];
-  Serial.println("Mensaje");
-  write.printTo(json);
-  Serial.println(json);
-=======
 
   if (sentido == CLOCKWISE) {
     write["sentido"] = CLOCKWISE;
@@ -119,15 +84,21 @@ void callback(char *topic, byte *payload, unsigned int length) {
     sentidoPasos *= -1;
     write["sentido"] = COUNTERCLOCKWISE;
   }
-  write["vueltas"] = vueltasCopy;
+  write["vueltas"] = vueltas;
 
+  write["vueltasActual"] = vueltasActual;
+  write["estado"] = "girando";
+  write.printTo(json);
+  client.publish(OUTSTEPPER, json);
   do {
     myStepper.step(sentidoPasos);
-    vueltas--;
-  } while (vueltas > 0);
-
+    vueltasActual++;
+    write["vueltasActual"] = vueltasActual;
+    write.printTo(json);
+    client.publish(OUTSTEPPER, json);
+  } while (vueltasActual < vueltas);
+  write["estado"] = "finalizado";
   write.printTo(json);
->>>>>>> json-mods
   client.publish(OUTSTEPPER, json);
 }
 
