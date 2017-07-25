@@ -60,22 +60,21 @@ void setup_wifi() {
 }
 
 void callback(char *topic, byte *payload, unsigned int length) {
-  int vueltas = 0, index = 0;
+  int vueltas = 0, index = 0, vueltasCopy = 0;
+  int sentidoPasos = stepsPerRevolution;
   char json[100];
   String sentido = "";
   char message[100];
 
   StaticJsonBuffer<200> jsonBuffer;
-
   for (int i = 0; i < length; i++) {
     message[i] = (char)*payload;
     payload++;
   }
-
   JsonObject &root = jsonBuffer.parseObject(message);
-
   vueltas = root["vueltas"].as<int>();
   sentido = root["sentido"].as<String>();
+  vueltasCopy = vueltas;
 
   if (!root.success()) {
     Serial.println(
@@ -84,24 +83,19 @@ void callback(char *topic, byte *payload, unsigned int length) {
   }
 
   if (sentido == CLOCKWISE) {
-    do {
-      myStepper.step(stepsPerRevolution);
-      vueltas--;
-    } while (vueltas > 0);
-    write["vueltas"] = 1;
     write["sentido"] = CLOCKWISE;
   } else if (sentido == COUNTERCLOCKWISE) {
-    do {
-      myStepper.step(-stepsPerRevolution);
-      vueltas--;
-    } while (vueltas > 0);
-    write["vueltas"] = 1;
+    sentidoPasos *= -1;
     write["sentido"] = COUNTERCLOCKWISE;
   }
+  write["vueltas"] = vueltasCopy;
+
+  do {
+    myStepper.step(sentidoPasos);
+    vueltas--;
+  } while (vueltas > 0);
 
   write.printTo(json);
-  Serial.println("Mensaje");
-  Serial.println(json);
   client.publish(OUTSTEPPER, json);
 }
 
