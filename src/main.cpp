@@ -2,6 +2,7 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 #include <Stepper.h>
+#include "JsonStepper.h"
 // Update these with values suitable for your network.
 
 const char *ssid = "SEMARD";
@@ -59,15 +60,11 @@ void callback(char *topic, byte *payload, unsigned int length) {
   String sentido = "";
   char message[100];
 
-  StaticJsonBuffer<200> jsonBuffer;
   StaticJsonBuffer<200> jsonWrite;
   JsonObject &write = jsonWrite.createObject();
+  JsonStepper jsonStepper;
 
-  for (int i = 0; i < length; i++) {
-    message[i] = (char)*payload;
-    payload++;
-  }
-  JsonObject &root = jsonBuffer.parseObject(message);
+  JsonObject &root = jsonStepper.decode_json(payload);
   vueltas = root["vueltas"].as<int>();
   sentido = root["sentido"].as<String>();
 
