@@ -60,9 +60,9 @@ void callback(char *topic, byte *payload, unsigned int length) {
   String sentido = "";
   char message[100];
 
+  JsonStepper jsonStepper;
   StaticJsonBuffer<200> jsonWrite;
   JsonObject &write = jsonWrite.createObject();
-  JsonStepper jsonStepper;
 
   JsonObject &root = jsonStepper.decode_json(payload);
   vueltas = root["vueltas"].as<int>();
@@ -85,18 +85,16 @@ void callback(char *topic, byte *payload, unsigned int length) {
 
   write["vueltasActual"] = vueltasActual;
   write["estado"] = "girando";
-  write.printTo(json);
-  client.publish(OUTSTEPPER, json);
+  client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
   do {
     myStepper.step(sentidoPasos);
     vueltasActual++;
     write["vueltasActual"] = vueltasActual;
-    write.printTo(json);
-    client.publish(OUTSTEPPER, json);
+    client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
   } while (vueltasActual < vueltas);
   write["estado"] = "finalizado";
-  write.printTo(json);
-  client.publish(OUTSTEPPER, json);
+  Serial.println(jsonStepper.encode_json(write));
+  client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
 }
 
 void reconnect() {

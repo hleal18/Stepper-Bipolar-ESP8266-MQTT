@@ -19,19 +19,15 @@ JsonObject& JsonStepper::decode_json(const byte* message)
   return input;
 }
 
-char* JsonStepper::encode_json(JsonObject& json_object)
+String JsonStepper::encode_json(JsonObject& json_object)
 {
-  char json[100];
-  char* json_ptr;
+  String json;
   json_object.printTo(json);
-  json_ptr = json;
-
-  return json_ptr;
+  return json;
 }
 
 JsonObject& JsonStepper::create_json_object()
 {
   StaticJsonBuffer<200> jsonBuffer;
-  JsonObject& object = jsonBuffer.createObject();
-  return object;
+  return jsonBuffer.createObject();
 }
