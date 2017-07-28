@@ -3,6 +3,8 @@
 #include <PubSubClient.h>
 #include <Stepper.h>
 #include "JsonStepper.h"
+#include <ESP8266mDNS.h>
+#include <ArduinoOTA.h>
 // Update these with values suitable for your network.
 
 const char *ssid = "SEMARD";
@@ -28,15 +30,42 @@ int calcular_porcentaje(int numerador, int denominador);
 void setup() {
   Serial.begin(115200);
   setup_wifi();
+  delay(15);
+  MDNS.begin("humberto");
+  delay(15);
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
   myStepper.setSpeed(120);
+
+  ArduinoOTA.onStart([]() {
+    Serial.println("Start");
+  });
+  ArduinoOTA.onEnd([]() {
+    Serial.println("\nEnd");
+  });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  });
+  ArduinoOTA.onError([](ota_error_t error) {
+    Serial.printf("Error[%u]: ", error);
+    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+    else if (error == OTA_END_ERROR) Serial.println("End Failed");
+  });
+  ArduinoOTA.begin();
+  Serial.println("Ready");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
 }
 
 void setup_wifi() {
 
   delay(10);
   // We start by connecting to a WiFi network
+  Serial.println("Booting");
+  WiFi.mode(WIFI_STA);
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
@@ -84,17 +113,21 @@ void callback(char *topic, byte *payload, unsigned int length) {
     write["sentido"] = COUNTERCLOCKWISE;
   }
   write["vueltas"] = vueltas;
-  write["progreso"] = porcentaje;
+  String numero = ((String)porcentaje) + "%";
+  write["progreso"] = numero;
   write["estado"] = "girando";
   client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
   do {
     myStepper.step(sentidoPasos);
     vueltasActual++;
     porcentaje = calcular_porcentaje(vueltasActual, vueltas);
-    write["progreso"] = porcentaje;
+    numero = ((String)porcentaje) + "%";
+    write["progreso"] = numero;
+    write["ota"] = "subido con ota";
     if((porcentaje%5) == 0){
       client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
     }
+    numero = "";
   } while (vueltasActual < vueltas);
   write["estado"] = "finalizado";
   Serial.println(jsonStepper.encode_json(write));
@@ -125,6 +158,7 @@ int calcular_porcentaje(int numerador, int denominador){
 }
 
 void loop() {
+  ArduinoOTA.handle();
   if (!client.connected()) {
     reconnect();
   }
