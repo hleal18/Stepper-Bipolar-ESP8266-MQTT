@@ -23,6 +23,7 @@ Stepper myStepper(stepsPerRevolution, 13, 12, 14, 16);
 
 void setup_wifi();
 void callback(char *topic, byte *payload, unsigned int length);
+int calcular_porcentaje(int numerador, int denominador);
 
 void setup() {
   Serial.begin(115200);
@@ -59,6 +60,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
   char json[100];
   String sentido = "";
   char message[100];
+  int porcentaje = ((vueltasActual*100)/vueltas);
 
   JsonStepper jsonStepper;
   StaticJsonBuffer<200> jsonWrite;
@@ -82,15 +84,17 @@ void callback(char *topic, byte *payload, unsigned int length) {
     write["sentido"] = COUNTERCLOCKWISE;
   }
   write["vueltas"] = vueltas;
-
-  write["vueltasActual"] = vueltasActual;
+  write["progreso"] = porcentaje;
   write["estado"] = "girando";
   client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
   do {
     myStepper.step(sentidoPasos);
     vueltasActual++;
-    write["vueltasActual"] = vueltasActual;
-    client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
+    porcentaje = calcular_porcentaje(vueltasActual, vueltas);
+    write["progreso"] = porcentaje;
+    if((porcentaje%5) == 0){
+      client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
+    }
   } while (vueltasActual < vueltas);
   write["estado"] = "finalizado";
   Serial.println(jsonStepper.encode_json(write));
@@ -114,6 +118,10 @@ void reconnect() {
       delay(5000);
     }
   }
+}
+
+int calcular_porcentaje(int numerador, int denominador){
+  return ((numerador*100)/denominador);
 }
 
 void loop() {
