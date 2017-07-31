@@ -1,15 +1,25 @@
+#include "JsonStepper.h"
 #include <ArduinoJson.h>
+#include <ArduinoOTA.h>
 #include <ESP8266WiFi.h>
+#include <ESP8266mDNS.h>
 #include <PubSubClient.h>
 #include <Stepper.h>
-#include "JsonStepper.h"
-#include <ESP8266mDNS.h>
-#include <ArduinoOTA.h>
 // Update these with values suitable for your network.
 
 const char *ssid = "SEMARD";
 const char *password = "SEMARD123";
 const char *mqtt_server = "192.168.0.200";
+
+boolean debug = false;
+unsigned long startTime = millis();
+const char *str_status[] = {"WL_IDLE_STATUS",    "WL_NO_SSID_AVAIL",
+                            "WL_SCAN_COMPLETED", "WL_CONNECTED",
+                            "WL_CONNECT_FAILED", "WL_CONNECTION_LOST",
+                            "WL_DISCONNECTED"};
+
+// provide text for the WiFi mode
+const char *str_mode[] = {"WIFI_OFF", "WIFI_STA", "WIFI_AP", "WIFI_AP_STA"};
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -25,7 +35,11 @@ Stepper myStepper(stepsPerRevolution, 13, 12, 14, 16);
 
 void setup_wifi();
 void callback(char *topic, byte *payload, unsigned int length);
-int calcular_porcentaje(int numerador, int denominador);
+int calcular_porcentaje(int &numerador, int &denominador);
+void telnetHandle();
+
+WiFiServer telnetServer(23);
+WiFiClient serverClient;
 
 void setup() {
   Serial.begin(115200);
@@ -35,29 +49,49 @@ void setup() {
   delay(15);
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
-  myStepper.setSpeed(120);
+  myStepper.setSpeed(50);
 
-  ArduinoOTA.onStart([]() {
-    Serial.println("Start");
-  });
-  ArduinoOTA.onEnd([]() {
-    Serial.println("\nEnd");
-  });
+  ArduinoOTA.onStart([]() { Serial.println("Start"); });
+  ArduinoOTA.onEnd([]() { Serial.println("\nEnd"); });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
     Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
   });
   ArduinoOTA.onError([](ota_error_t error) {
     Serial.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-    else if (error == OTA_END_ERROR) Serial.println("End Failed");
+    if (error == OTA_AUTH_ERROR)
+      Serial.println("Auth Failed");
+    else if (error == OTA_BEGIN_ERROR)
+      Serial.println("Begin Failed");
+    else if (error == OTA_CONNECT_ERROR)
+      Serial.println("Connect Failed");
+    else if (error == OTA_RECEIVE_ERROR)
+      Serial.println("Receive Failed");
+    else if (error == OTA_END_ERROR)
+      Serial.println("End Failed");
   });
   ArduinoOTA.begin();
   Serial.println("Ready");
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.print("WiFi mode: ");
+    Serial.println(str_mode[WiFi.getMode()]);
+    Serial.print("Status: ");
+    Serial.println(str_status[WiFi.status()]);
+    // signal WiFi connect
+    delay(300); // ms
+  } else {
+    Serial.println("");
+    Serial.println("WiFi connect failed, push RESET button.");
+  }
+
+  telnetServer.begin();
+  telnetServer.setNoDelay(true);
+  Serial.println("Please connect Telnet Client, exit with ^] and 'quit'");
+
+  Serial.print("Free Heap[B]: ");
+  Serial.println(ESP.getFreeHeap());
 }
 
 void setup_wifi() {
@@ -89,7 +123,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
   char json[100];
   String sentido = "";
   char message[100];
-  int porcentaje = ((vueltasActual*100)/vueltas);
+  int porcentaje = ((vueltasActual * 100) / vueltas);
 
   JsonStepper jsonStepper;
   StaticJsonBuffer<200> jsonWrite;
@@ -100,7 +134,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
   sentido = root["sentido"].as<String>();
 
   if (!root.success()) {
-    Serial.println(
+    serverClient.println(
         "Hay un error en la instrucción. Revise de nuevo el formato.");
     root.printTo(Serial);
     return;
@@ -113,24 +147,25 @@ void callback(char *topic, byte *payload, unsigned int length) {
     write["sentido"] = COUNTERCLOCKWISE;
   }
   write["vueltas"] = vueltas;
-  String numero = ((String)porcentaje) + "%";
-  write["progreso"] = numero;
+  write["progreso"] = porcentaje;
   write["estado"] = "girando";
   client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
   do {
+    serverClient.println("Iniciando paso.");
+    delay(15);
     myStepper.step(sentidoPasos);
+    delay(15);
+    serverClient.println("Terminando paso.");
     vueltasActual++;
     porcentaje = calcular_porcentaje(vueltasActual, vueltas);
-    numero = ((String)porcentaje) + "%";
-    write["progreso"] = numero;
+    write["progreso"] = porcentaje;
     write["ota"] = "subido con ota";
-    if((porcentaje%5) == 0){
+    if ((porcentaje % 5) == 0) {
       client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
     }
-    numero = "";
   } while (vueltasActual < vueltas);
   write["estado"] = "finalizado";
-  Serial.println(jsonStepper.encode_json(write));
+  serverClient.println(jsonStepper.encode_json(write));
   client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
 }
 
@@ -153,14 +188,52 @@ void reconnect() {
   }
 }
 
-int calcular_porcentaje(int numerador, int denominador){
-  return ((numerador*100)/denominador);
+int calcular_porcentaje(int &numerador, int &denominador) {
+  return ((numerador * 100) / denominador);
 }
 
 void loop() {
   ArduinoOTA.handle();
+  telnetHandle();
   if (!client.connected()) {
     reconnect();
   }
   client.loop();
+}
+bool mensaje = false;
+void telnetHandle() {
+  if (telnetServer.hasClient()) {
+    if (!serverClient || !serverClient.connected()) {
+      if (serverClient) {
+        serverClient.stop();
+        Serial.println("Telnet Client Stop");
+      }
+      serverClient = telnetServer.available();
+      Serial.println("New Telnet client");
+      serverClient
+          .flush(); // clear input buffer, else you get strange characters
+    }
+  }
+
+  while (serverClient.available()) { // get data from Client
+    Serial.write(serverClient.read());
+  }
+
+  if (!mensaje) { // run every 2000 ms
+    startTime = millis();
+
+    if (serverClient && serverClient.connected()) { // send data to Client
+      serverClient.println("Conectado por telnet. Sos re-groso che.");
+      serverClient.println("Un saludo para los mortales.");
+      if (WiFi.status() == WL_CONNECTED) {
+        serverClient.println("Conectado a: ");
+        serverClient.println(WiFi.localIP());
+      }
+      if (client.connected()) {
+        serverClient.println("Conectado a MQTT");
+      }
+      mensaje = true;
+    }
+  }
+  delay(10); // to avoid strange characters left in buffer
 }
