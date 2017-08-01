@@ -10,6 +10,7 @@
 const char *ssid = "SEMARD";
 const char *password = "SEMARD123";
 const char *mqtt_server = "192.168.0.200";
+const char *dns = "stepper-01";
 
 boolean debug = false;
 unsigned long startTime = millis();
@@ -23,6 +24,8 @@ const char *str_mode[] = {"WIFI_OFF", "WIFI_STA", "WIFI_AP", "WIFI_AP_STA"};
 
 WiFiClient espClient;
 PubSubClient client(espClient);
+MDNSResponder mdns;
+bool dnsConnection = false;
 
 #define INSTEPPER "inStepper"
 #define OUTSTEPPER "outStepper"
@@ -45,7 +48,9 @@ void setup() {
   Serial.begin(115200);
   setup_wifi();
   delay(15);
-  MDNS.begin("humberto");
+  if (mdns.begin(dns, WiFi.localIP())) {
+    dnsConnection = true;
+  }
   delay(15);
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
@@ -231,6 +236,9 @@ void telnetHandle() {
       }
       if (client.connected()) {
         serverClient.println("Conectado a MQTT");
+      }
+      if (dnsConnection) {
+        serverClient.println("Se logró establecer el dns");
       }
       mensaje = true;
     }
