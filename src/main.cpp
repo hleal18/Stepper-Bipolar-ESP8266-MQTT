@@ -29,7 +29,7 @@ MDNSResponder mdns;
 bool dnsConnection = false;
 
 #define INSTEPPER "inStepper"
-#define OUTSTEPPER "outStepper"
+#define OUTSTEPPER "prrito"
 #define CLOCKWISE "clockwise"
 #define COUNTERCLOCKWISE "counterclockwise"
 
@@ -105,28 +105,26 @@ void setup_wifi() {
   delay(10);
   // We start by connecting to a WiFi network
   Serial.println("Booting");
-  //WiFi.mode(WIFI_STA);
+  // WiFi.mode(WIFI_STA);
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
 
-  //WiFi.begin(ssid, password);
+  // WiFi.begin(ssid, password);
   WiFiManager wifiManager;
   wifiManager.resetSettings();
 
-  if(!wifiManager.autoConnect("Prrito")) {
+  if (!wifiManager.autoConnect("Prrito")) {
     Serial.println("failed to connect and hit timeout");
-    //reset and try again, or maybe put it to deep sleep
+    // reset and try again, or maybe put it to deep sleep
     ESP.reset();
     delay(1000);
   }
 
-  //while (WiFi.status() != WL_CONNECTED) {
+  // while (WiFi.status() != WL_CONNECTED) {
   //  delay(500);
   //  Serial.print(".");
   //}
-
-
 
   Serial.println("");
   Serial.println("WiFi connected");
