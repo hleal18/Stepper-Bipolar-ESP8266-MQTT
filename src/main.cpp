@@ -41,9 +41,14 @@ void setup_wifi();
 void callback(char *topic, byte *payload, unsigned int length);
 int calcular_porcentaje(int &numerador, int &denominador);
 void telnetHandle();
+void idleMessage();
 
 WiFiServer telnetServer(23);
 WiFiClient serverClient;
+
+unsigned long primer_registro = 0;
+unsigned long ultimo_registro = 0;
+bool idle_message_flag = true;
 
 void setup() {
   Serial.begin(115200);
@@ -98,6 +103,8 @@ void setup() {
 
   Serial.print("Free Heap[B]: ");
   Serial.println(ESP.getFreeHeap());
+
+  primer_registro = millis();
 }
 
 void setup_wifi() {
@@ -112,7 +119,7 @@ void setup_wifi() {
 
   //WiFi.begin(ssid, password);
   WiFiManager wifiManager;
-  wifiManager.resetSettings();
+  //wifiManager.resetSettings();
 
   if(!wifiManager.autoConnect("Prrito")) {
     Serial.println("failed to connect and hit timeout");
@@ -184,6 +191,9 @@ void callback(char *topic, byte *payload, unsigned int length) {
   write["estado"] = "finalizado";
   serverClient.println(jsonStepper.encode_json(write));
   client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
+
+  primer_registro = millis();
+  ultimo_registro = primer_registro;
 }
 
 void reconnect() {
@@ -216,6 +226,14 @@ void loop() {
     reconnect();
   }
   client.loop();
+  //manda un  mensaje de inactividad al topic outStepper cada 30s
+  ultimo_registro = millis();
+  if((ultimo_registro - primer_registro) >= 30000 || idle_message_flag){
+    idleMessage();
+    primer_registro = ultimo_registro;
+    serverClient.println("Se ejecutó la orden");
+    idle_message_flag = !idle_message_flag;
+  }
 }
 bool mensaje = false;
 void telnetHandle() {
@@ -227,8 +245,7 @@ void telnetHandle() {
       }
       serverClient = telnetServer.available();
       Serial.println("New Telnet client");
-      serverClient
-          .flush(); // clear input buffer, else you get strange characters
+      serverClient.flush(); // clear input buffer, else you get strange characters
     }
   }
 
@@ -256,4 +273,8 @@ void telnetHandle() {
     }
   }
   delay(10); // to avoid strange characters left in buffer
+}
+
+void idleMessage(){
+  client.publish(OUTSTEPPER, "Inactivo. Esperando orden.");
 }
