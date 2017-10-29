@@ -145,7 +145,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
     porcentajeActual += 5;
     write["progreso"] = porcentajeActual;
     client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
-  } while (vueltasActual < vueltas);
+  } while (porcentajeActual != 100);
   write["estado"] = "finalizado";
   serverClient.println(jsonStepper.encode_json(write));
   client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
