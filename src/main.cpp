@@ -43,7 +43,7 @@ Stepper myStepper(stepsPerRevolution, 13, 12, 14, 16);
 void setup_wifi();
 void callback(char *topic, byte *payload, unsigned int length);
 int calcular_porcentaje(int &numerador, int &denominador);
-void telnetHandle();
+
 
 WiFiServer telnetServer(23);
 WiFiClient serverClient;
@@ -58,30 +58,7 @@ void setup() {
   delay(15);
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
-  myStepper.setSpeed(50);
-
-  ArduinoOTA.onStart([]() { Serial.println("Start"); });
-  ArduinoOTA.onEnd([]() { Serial.println("\nEnd"); });
-  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-  });
-  ArduinoOTA.onError([](ota_error_t error) {
-    Serial.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR)
-      Serial.println("Auth Failed");
-    else if (error == OTA_BEGIN_ERROR)
-      Serial.println("Begin Failed");
-    else if (error == OTA_CONNECT_ERROR)
-      Serial.println("Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR)
-      Serial.println("Receive Failed");
-    else if (error == OTA_END_ERROR)
-      Serial.println("End Failed");
-  });
-  ArduinoOTA.begin();
-  Serial.println("Ready");
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
+  myStepper.setSpeed(60);
 
   if (WiFi.status() == WL_CONNECTED) {
     Serial.print("WiFi mode: ");
@@ -209,50 +186,8 @@ int calcular_porcentaje(int &numerador, int &denominador) {
 }
 
 void loop() {
-  ArduinoOTA.handle();
-  telnetHandle();
   if (!client.connected()) {
     reconnect();
   }
   client.loop();
-}
-bool mensaje = false;
-void telnetHandle() {
-  if (telnetServer.hasClient()) {
-    if (!serverClient || !serverClient.connected()) {
-      if (serverClient) {
-        serverClient.stop();
-        Serial.println("Telnet Client Stop");
-      }
-      serverClient = telnetServer.available();
-      Serial.println("New Telnet client");
-      serverClient
-          .flush(); // clear input buffer, else you get strange characters
-    }
-  }
-
-  while (serverClient.available()) { // get data from Client
-    Serial.write(serverClient.read());
-  }
-
-  if (!mensaje) { // run every 2000 ms
-    startTime = millis();
-
-    if (serverClient && serverClient.connected()) { // send data to Client
-      serverClient.println("Conectado por telnet. Sos re-groso che.");
-      serverClient.println("Un saludo para los mortales.");
-      if (WiFi.status() == WL_CONNECTED) {
-        serverClient.println("Conectado a: ");
-        serverClient.println(WiFi.localIP());
-      }
-      if (client.connected()) {
-        serverClient.println("Conectado a MQTT");
-      }
-      if (dnsConnection) {
-        serverClient.println("Se logró establecer el dns");
-      }
-      mensaje = true;
-    }
-  }
-  delay(10); // to avoid strange characters left in buffer
 }
