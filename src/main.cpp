@@ -8,9 +8,12 @@
 #include <WiFiManager.h>
 // Update these with values suitable for your network.
 
-const char *ssid = "SEMARD";
-const char *password = "SEMARD123";
-const char *mqtt_server = "192.168.0.200";
+const char *ssid = "sc-5efa";
+const char *password = "4P252YEL9CXF";
+const char *mqtt_server = "m12.cloudmqtt.com";
+const int  mqtt_port = 12489;
+const char *mqtt_username = "xbvmyoxh";
+const char *mqtt_password = "nJzjyl5r-7GD";
 const char *dns = "stepper-01";
 
 boolean debug = false;
@@ -29,7 +32,7 @@ MDNSResponder mdns;
 bool dnsConnection = false;
 
 #define INSTEPPER "inStepper"
-#define OUTSTEPPER "prrito"
+#define OUTSTEPPER "outStepper"
 #define CLOCKWISE "clockwise"
 #define COUNTERCLOCKWISE "counterclockwise"
 
@@ -53,7 +56,7 @@ void setup() {
     dnsConnection = true;
   }
   delay(15);
-  client.setServer(mqtt_server, 1883);
+  client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
   myStepper.setSpeed(50);
 
@@ -112,7 +115,6 @@ void setup_wifi() {
 
   // WiFi.begin(ssid, password);
   WiFiManager wifiManager;
-  wifiManager.resetSettings();
 
   if (!wifiManager.autoConnect("Prrito")) {
     Serial.println("failed to connect and hit timeout");
@@ -174,7 +176,6 @@ void callback(char *topic, byte *payload, unsigned int length) {
     vueltasActual++;
     porcentaje = calcular_porcentaje(vueltasActual, vueltas);
     write["progreso"] = porcentaje;
-    write["ota"] = "subido con ota";
     if ((porcentaje % 5) == 0) {
       client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
     }
@@ -189,8 +190,8 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    if (client.connect("Pasito a pasito. Dale suavecito. Ba dum tss.", "semard",
-                       "semard2017")) {
+    if (client.connect("Pasito a pasito. Dale suavecito. Ba dum tss.", mqtt_username,
+                       mqtt_password)) {
       Serial.println("connected");
       client.subscribe(INSTEPPER);
     } else {
