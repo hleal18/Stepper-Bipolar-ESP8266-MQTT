@@ -118,6 +118,8 @@ void callback(char *topic, byte *payload, unsigned int length) {
   String sentido = "";
   char message[100];
   int porcentaje = ((vueltasActual * 100) / vueltas);
+  int porcentajeActual = 0;
+  float parametro = 0;
 
   JsonStepper jsonStepper;
   StaticJsonBuffer<200> jsonWrite;
@@ -127,13 +129,6 @@ void callback(char *topic, byte *payload, unsigned int length) {
   vueltas = root["vueltas"].as<int>();
   sentido = root["sentido"].as<String>();
 
-  if (!root.success()) {
-    serverClient.println(
-        "Hay un error en la instrucción. Revise de nuevo el formato.");
-    root.printTo(Serial);
-    return;
-  }
-
   if (sentido == CLOCKWISE) {
     write["sentido"] = CLOCKWISE;
   } else if (sentido == COUNTERCLOCKWISE) {
@@ -141,21 +136,15 @@ void callback(char *topic, byte *payload, unsigned int length) {
     write["sentido"] = COUNTERCLOCKWISE;
   }
   write["vueltas"] = vueltas;
-  write["progreso"] = porcentaje;
+  write["progreso"] = porcentajeActual;
   write["estado"] = "girando";
   client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
+  parametro = vueltas*0.05;
   do {
-    serverClient.println("Iniciando paso.");
-    delay(15);
-    myStepper.step(sentidoPasos);
-    delay(15);
-    serverClient.println("Terminando paso.");
-    vueltasActual++;
-    porcentaje = calcular_porcentaje(vueltasActual, vueltas);
-    write["progreso"] = porcentaje;
-    if ((porcentaje % 5) == 0) {
-      client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
-    }
+    myStepper.step(sentidoPasos*parametro);
+    porcentajeActual += 5;
+    write["progreso"] = porcentajeActual;
+    client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
   } while (vueltasActual < vueltas);
   write["estado"] = "finalizado";
   serverClient.println(jsonStepper.encode_json(write));
