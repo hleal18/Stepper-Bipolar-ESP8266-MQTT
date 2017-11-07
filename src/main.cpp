@@ -8,8 +8,9 @@
 #include <WiFiManager.h>
 // Update these with values suitable for your network.
 
-const char *ssid = "sc-5efa";
-const char *password = "4P252YEL9CXF";
+//Variables usadas para la conexión la conexión a internet y MQTT.
+const char *ssid = "red-conexion-internet";
+const char *password = "contraseña-conexion-internet";
 const char *mqtt_server = "m12.cloudmqtt.com";
 const int  mqtt_port = 12489;
 const char *mqtt_username = "xbvmyoxh";
@@ -23,7 +24,7 @@ const char *str_status[] = {"WL_IDLE_STATUS",    "WL_NO_SSID_AVAIL",
                             "WL_CONNECT_FAILED", "WL_CONNECTION_LOST",
                             "WL_DISCONNECTED"};
 
-// provide text for the WiFi mode
+//Los modos en los que puede establecerse la red WiFi.
 const char *str_mode[] = {"WIFI_OFF", "WIFI_STA", "WIFI_AP", "WIFI_AP_STA"};
 
 WiFiClient espClient;
@@ -56,7 +57,9 @@ void setup() {
     dnsConnection = true;
   }
   delay(15);
+  //Se establece el servidor MQTT.
   client.setServer(mqtt_server, mqtt_port);
+  //Se establece el método que se ejecuta cada vez que se reciban peticiones.
   client.setCallback(callback);
   myStepper.setSpeed(60);
 
@@ -117,32 +120,39 @@ void callback(char *topic, byte *payload, unsigned int length) {
   char json[100];
   String sentido = "";
   char message[100];
-  int porcentaje = ((vueltasActual * 100) / vueltas);
+  int porcentaje = 50;
   int porcentajeActual = 0;
   float parametro = 0;
 
+  //Se usan para crear el JSON que se enviará.
   JsonStepper jsonStepper;
   StaticJsonBuffer<200> jsonWrite;
   JsonObject &write = jsonWrite.createObject();
 
+  //Se decodifica el payload, el cual contiene información del JSON recibido con
+  //Cada uno de sus campos.
   JsonObject &root = jsonStepper.decode_json(payload);
   vueltas = root["vueltas"].as<int>();
   sentido = root["sentido"].as<String>();
 
+  //Dependiendo de la variable recibida, gira en un sentido o en otro.
   if (sentido == CLOCKWISE) {
     write["sentido"] = CLOCKWISE;
   } else if (sentido == COUNTERCLOCKWISE) {
     sentidoPasos *= -1;
     write["sentido"] = COUNTERCLOCKWISE;
   }
+
+  //Se completa el JSON a enviar.
   write["vueltas"] = vueltas;
   write["progreso"] = porcentajeActual;
   write["estado"] = "girando";
+  //Se codifica y se publica el primer JSON informando el estado del motor.
   client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
-  parametro = vueltas*0.05;
+  parametro = vueltas*(porcentaje/100.0);
   do {
     myStepper.step(sentidoPasos*parametro);
-    porcentajeActual += 5;
+    porcentajeActual += porcentaje;
     write["progreso"] = porcentajeActual;
     client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
   } while (porcentajeActual != 100);
@@ -151,6 +161,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
   client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
 }
 
+//Se encarga de gestionar la conexión al servidor MQTT.
 void reconnect() {
   // Loop until we're reconnected
   while (!client.connected()) {
