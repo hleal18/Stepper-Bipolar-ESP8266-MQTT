@@ -1,6 +1,7 @@
 #include "JsonStepper.h"
 #include <ArduinoJson.h>
-#include <ArduinoOTA.h>
+//#include <ArduinoOTA.h>
+#include "OTAStepper.h"
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <PubSubClient.h>
@@ -8,10 +9,13 @@
 #include <WiFiManager.h>
 // Update these with values suitable for your network.
 
-const char *ssid = "SEMARD";
-const char *password = "SEMARD123";
-const char *mqtt_server = "192.168.0.200";
+//Credenciales de conexión a la red y MQTT
+const char *ssid = "sc-5efa";
+const char *password = "4P252YEL9CXF";
+const char *mqtt_server = "ip servidor mqtt";
 const char *dns = "stepper-01";
+const char *mqtt_username = "semard";
+const char *mqtt_password = "contraseña";
 
 boolean debug = false;
 unsigned long startTime = millis();
@@ -112,7 +116,8 @@ void setup_wifi() {
 
   // WiFi.begin(ssid, password);
   WiFiManager wifiManager;
-  wifiManager.resetSettings();
+  //Resetea los datos guardados del WiFi. Si se activa reinicia las credenciales.
+  //wifiManager.resetSettings();
 
   if (!wifiManager.autoConnect("Prrito")) {
     Serial.println("failed to connect and hit timeout");
@@ -208,7 +213,7 @@ int calcular_porcentaje(int &numerador, int &denominador) {
 }
 
 void loop() {
-  ArduinoOTA.handle();
+  OTAStepper.handle();
   telnetHandle();
   if (!client.connected()) {
     reconnect();
