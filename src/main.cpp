@@ -1,7 +1,6 @@
 #include "JsonStepper.h"
 #include <ArduinoJson.h>
-//#include <ArduinoOTA.h>
-#include "OTAStepper.h"
+#include <ArduinoOTA.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <PubSubClient.h>
@@ -9,13 +8,14 @@
 #include <WiFiManager.h>
 // Update these with values suitable for your network.
 
-//Credenciales de conexión a la red y MQTT
+//Variables usadas para la conexión la conexión a internet y MQTT.
 const char *ssid = "sc-5efa";
 const char *password = "4P252YEL9CXF";
-const char *mqtt_server = "";
-const char *dns = "stepper-01";
+const char *mqtt_server = "m12.cloudmqtt.com";
+const int  mqtt_port = 12489;
 const char *mqtt_username = "xbvmyoxh";
-const char *mqtt_password = "m12.cloudmqtt.com";
+const char *mqtt_password = "nJzjyl5r-7GD";
+const char *dns = "stepper-01";
 
 boolean debug = false;
 unsigned long startTime = millis();
@@ -24,7 +24,7 @@ const char *str_status[] = {"WL_IDLE_STATUS",    "WL_NO_SSID_AVAIL",
                             "WL_CONNECT_FAILED", "WL_CONNECTION_LOST",
                             "WL_DISCONNECTED"};
 
-// provide text for the WiFi mode
+//Los modos en los que puede establecerse la red WiFi.
 const char *str_mode[] = {"WIFI_OFF", "WIFI_STA", "WIFI_AP", "WIFI_AP_STA"};
 
 WiFiClient espClient;
@@ -33,7 +33,7 @@ MDNSResponder mdns;
 bool dnsConnection = false;
 
 #define INSTEPPER "inStepper"
-#define OUTSTEPPER "prrito"
+#define OUTSTEPPER "outStepper"
 #define CLOCKWISE "clockwise"
 #define COUNTERCLOCKWISE "counterclockwise"
 
@@ -44,10 +44,13 @@ Stepper myStepper(stepsPerRevolution, 13, 12, 14, 16);
 void setup_wifi();
 void callback(char *topic, byte *payload, unsigned int length);
 int calcular_porcentaje(int &numerador, int &denominador);
-void telnetHandle();
+void publicar_inactividad();
 
 WiFiServer telnetServer(23);
 WiFiClient serverClient;
+
+//Guarda el último numero de vueltas que se realizaron.
+int ultimaVuelta = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -57,32 +60,11 @@ void setup() {
     dnsConnection = true;
   }
   delay(15);
-  client.setServer(mqtt_server, 1883);
+  //Se establece el servidor MQTT.
+  client.setServer(mqtt_server, mqtt_port);
+  //Se establece el método que se ejecuta cada vez que se reciban peticiones.
   client.setCallback(callback);
-  myStepper.setSpeed(50);
-
-  ArduinoOTA.onStart([]() { Serial.println("Start"); });
-  ArduinoOTA.onEnd([]() { Serial.println("\nEnd"); });
-  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-  });
-  ArduinoOTA.onError([](ota_error_t error) {
-    Serial.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR)
-      Serial.println("Auth Failed");
-    else if (error == OTA_BEGIN_ERROR)
-      Serial.println("Begin Failed");
-    else if (error == OTA_CONNECT_ERROR)
-      Serial.println("Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR)
-      Serial.println("Receive Failed");
-    else if (error == OTA_END_ERROR)
-      Serial.println("End Failed");
-  });
-  ArduinoOTA.begin();
-  Serial.println("Ready");
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
+  myStepper.setSpeed(60);
 
   if (WiFi.status() == WL_CONNECTED) {
     Serial.print("WiFi mode: ");
@@ -143,59 +125,58 @@ void callback(char *topic, byte *payload, unsigned int length) {
   char json[100];
   String sentido = "";
   char message[100];
-  int porcentaje = ((vueltasActual * 100) / vueltas);
+  int porcentaje = 50;
+  int porcentajeActual = 0;
+  float parametro = 0;
 
+  //Se usan para crear el JSON que se enviará.
   JsonStepper jsonStepper;
   StaticJsonBuffer<200> jsonWrite;
   JsonObject &write = jsonWrite.createObject();
 
+  //Se decodifica el payload, el cual contiene información del JSON recibido con
+  //Cada uno de sus campos.
   JsonObject &root = jsonStepper.decode_json(payload);
   vueltas = root["vueltas"].as<int>();
   sentido = root["sentido"].as<String>();
 
-  if (!root.success()) {
-    serverClient.println(
-        "Hay un error en la instrucción. Revise de nuevo el formato.");
-    root.printTo(Serial);
-    return;
-  }
+  //Se guardan las vueltas a realizar en el registro.
+  int ultimaVuelta = vueltas;
 
+  //Dependiendo de la variable recibida, gira en un sentido o en otro.
   if (sentido == CLOCKWISE) {
     write["sentido"] = CLOCKWISE;
   } else if (sentido == COUNTERCLOCKWISE) {
     sentidoPasos *= -1;
     write["sentido"] = COUNTERCLOCKWISE;
   }
+
+  //Se completa el JSON a enviar.
   write["vueltas"] = vueltas;
-  write["progreso"] = porcentaje;
+  write["progreso"] = porcentajeActual;
   write["estado"] = "girando";
+  //Se codifica y se publica el primer JSON informando el estado del motor.
   client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
+  parametro = vueltas*(porcentaje/100.0);
   do {
-    serverClient.println("Iniciando paso.");
-    delay(15);
-    myStepper.step(sentidoPasos);
-    delay(15);
-    serverClient.println("Terminando paso.");
-    vueltasActual++;
-    porcentaje = calcular_porcentaje(vueltasActual, vueltas);
-    write["progreso"] = porcentaje;
-    write["ota"] = "subido con ota";
-    if ((porcentaje % 5) == 0) {
-      client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
-    }
-  } while (vueltasActual < vueltas);
+    myStepper.step(sentidoPasos*parametro);
+    porcentajeActual += porcentaje;
+    write["progreso"] = porcentajeActual;
+    client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
+  } while (porcentajeActual != 100);
   write["estado"] = "finalizado";
   serverClient.println(jsonStepper.encode_json(write));
   client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
 }
 
+//Se encarga de gestionar la conexión al servidor MQTT.
 void reconnect() {
   // Loop until we're reconnected
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    if (client.connect("Pasito a pasito. Dale suavecito. Ba dum tss.", "semard",
-                       "semard2017")) {
+    if (client.connect("Pasito a pasito. Dale suavecito. Ba dum tss.", mqtt_username,
+                       mqtt_password)) {
       Serial.println("connected");
       client.subscribe(INSTEPPER);
     } else {
@@ -212,51 +193,26 @@ int calcular_porcentaje(int &numerador, int &denominador) {
   return ((numerador * 100) / denominador);
 }
 
+int tiempoActual = millis();
+int periodo = 10000;
 void loop() {
-  OTAStepper.handle();
-  telnetHandle();
+  ArduinoOTA.handle();
   if (!client.connected()) {
     reconnect();
   }
   client.loop();
+  if(millis() > tiempoActual + periodo){
+    publicar_inactividad();
+    tiempoActual = millis();
+  }
 }
-bool mensaje = false;
-void telnetHandle() {
-  if (telnetServer.hasClient()) {
-    if (!serverClient || !serverClient.connected()) {
-      if (serverClient) {
-        serverClient.stop();
-        Serial.println("Telnet Client Stop");
-      }
-      serverClient = telnetServer.available();
-      Serial.println("New Telnet client");
-      serverClient
-          .flush(); // clear input buffer, else you get strange characters
-    }
-  }
 
-  while (serverClient.available()) { // get data from Client
-    Serial.write(serverClient.read());
-  }
+void publicar_inactividad(){
+  JsonStepper mensaje_inactividad;
+  StaticJsonBuffer<200> jsonWrite;
+  JsonObject &write = jsonWrite.createObject();
+  write["estado"] = "Esperando orden";
+  write["vueltas"] = ultimaVuelta;
+  client.publish(OUTSTEPPER, mensaje_inactividad.encode_json(write).c_str());
 
-  if (!mensaje) { // run every 2000 ms
-    startTime = millis();
-
-    if (serverClient && serverClient.connected()) { // send data to Client
-      serverClient.println("Conectado por telnet. Sos re-groso che.");
-      serverClient.println("Un saludo para los mortales.");
-      if (WiFi.status() == WL_CONNECTED) {
-        serverClient.println("Conectado a: ");
-        serverClient.println(WiFi.localIP());
-      }
-      if (client.connected()) {
-        serverClient.println("Conectado a MQTT");
-      }
-      if (dnsConnection) {
-        serverClient.println("Se logró establecer el dns");
-      }
-      mensaje = true;
-    }
-  }
-  delay(10); // to avoid strange characters left in buffer
 }
