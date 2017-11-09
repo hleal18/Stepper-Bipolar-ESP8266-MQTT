@@ -12,10 +12,10 @@
 //Credenciales de conexión a la red y MQTT
 const char *ssid = "sc-5efa";
 const char *password = "4P252YEL9CXF";
-const char *mqtt_server = "ip servidor mqtt";
+const char *mqtt_server = "";
 const char *dns = "stepper-01";
-const char *mqtt_username = "semard";
-const char *mqtt_password = "contraseña";
+const char *mqtt_username = "xbvmyoxh";
+const char *mqtt_password = "m12.cloudmqtt.com";
 
 boolean debug = false;
 unsigned long startTime = millis();
