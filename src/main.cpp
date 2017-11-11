@@ -50,7 +50,9 @@ WiFiServer telnetServer(23);
 WiFiClient serverClient;
 
 //Guarda el último numero de vueltas que se realizaron.
-int ultimaVuelta = 0;
+int estadoActual = 0;
+int tiempoActual = millis();
+int periodo = 10000;
 
 void setup() {
   Serial.begin(115200);
@@ -141,14 +143,16 @@ void callback(char *topic, byte *payload, unsigned int length) {
   sentido = root["sentido"].as<String>();
 
   //Se guardan las vueltas a realizar en el registro.
-  int ultimaVuelta = vueltas;
+
 
   //Dependiendo de la variable recibida, gira en un sentido o en otro.
   if (sentido == CLOCKWISE) {
     write["sentido"] = CLOCKWISE;
+    estadoActual += vueltas;
   } else if (sentido == COUNTERCLOCKWISE) {
     sentidoPasos *= -1;
     write["sentido"] = COUNTERCLOCKWISE;
+    estadoActual -= vueltas;
   }
 
   //Se completa el JSON a enviar.
@@ -193,8 +197,7 @@ int calcular_porcentaje(int &numerador, int &denominador) {
   return ((numerador * 100) / denominador);
 }
 
-int tiempoActual = millis();
-int periodo = 10000;
+
 void loop() {
   ArduinoOTA.handle();
   if (!client.connected()) {
@@ -212,7 +215,7 @@ void publicar_inactividad(){
   StaticJsonBuffer<200> jsonWrite;
   JsonObject &write = jsonWrite.createObject();
   write["estado"] = "Esperando orden";
-  write["vueltas"] = ultimaVuelta;
+  write["vueltas"] = estadoActual;
   client.publish(OUTSTEPPER, mensaje_inactividad.encode_json(write).c_str());
 
 }
