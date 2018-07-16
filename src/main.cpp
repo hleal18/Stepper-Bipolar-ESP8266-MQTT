@@ -133,16 +133,13 @@ void setup_wifi() {
 }
 
 void callback(char *topic, byte *payload, unsigned int length) {
-  int vueltas = 0, index = 0, vueltasActual = 0;
+  int vueltas = 0, vueltasActual = 0;
   int sentidoPasos = stepsPerRevolution;
-  char json[100];
   String sentido = "";
-  char message[100];
   int porcentaje = ((vueltasActual * 100) / vueltas);
 
   JsonStepper jsonStepper;
-  StaticJsonBuffer<200> jsonWrite;
-  JsonObject &write = jsonWrite.createObject();
+  JsonObject &write = jsonStepper.create_json_object();
 
   JsonObject &root = jsonStepper.decode_json(payload);
   vueltas = root["vueltas"].as<int>();
@@ -174,7 +171,6 @@ void callback(char *topic, byte *payload, unsigned int length) {
     vueltasActual++;
     porcentaje = calcular_porcentaje(vueltasActual, vueltas);
     write["progreso"] = porcentaje;
-    write["ota"] = "subido con ota";
     if ((porcentaje % 5) == 0) {
       client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
     }
