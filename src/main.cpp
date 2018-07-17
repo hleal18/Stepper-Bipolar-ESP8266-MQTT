@@ -10,7 +10,7 @@
 
 const char *ssid = "SEMARD";
 const char *password = "SEMARD123";
-const char *mqtt_server = "192.168.0.200";
+const char *mqtt_server = "192.168.0.34";
 const char *dns = "stepper-01";
 
 boolean debug = false;
@@ -112,7 +112,7 @@ void setup_wifi() {
 
   // WiFi.begin(ssid, password);
   WiFiManager wifiManager;
-  wifiManager.resetSettings();
+  //wifiManager.resetSettings();
 
   if (!wifiManager.autoConnect("Prrito")) {
     Serial.println("failed to connect and hit timeout");
@@ -139,7 +139,8 @@ void callback(char *topic, byte *payload, unsigned int length) {
   int porcentaje = ((vueltasActual * 100) / vueltas);
 
   JsonStepper jsonStepper;
-  JsonObject &write = jsonStepper.create_json_object();
+  StaticJsonBuffer<200> jsonBuffer;
+  JsonObject &write = jsonBuffer.createObject();
 
   JsonObject &root = jsonStepper.decode_json(payload);
   vueltas = root["vueltas"].as<int>();
