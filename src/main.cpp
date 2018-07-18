@@ -2,10 +2,8 @@
 #include <ArduinoJson.h>
 #include <ArduinoOTA.h>
 #include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h>
 #include <PubSubClient.h>
 #include <Stepper.h>
-#include <WiFiManager.h>
 #include "WiFiConfigurator.h"
 // Update these with values suitable for your network.
 
@@ -14,8 +12,8 @@
 #define CLOCKWISE "clockwise"
 #define COUNTERCLOCKWISE "counterclockwise"
 
-const char *ssid = "hola";
-const char *password = "hola";
+const char *ssid = "MOMOLEAL";
+const char *password = "tatileal1";
 const char *mqtt_server = "192.168.0.34";
 const char *dns = "stepper-01";
 
@@ -33,6 +31,7 @@ const char *str_mode[] = {"WIFI_OFF", "WIFI_STA", "WIFI_AP", "WIFI_AP_STA"};
 WiFiClient espClient;
 PubSubClient client(espClient);
 //Clase para controlar el Stepper
+const int stepsPerRevolution = 200;
 Stepper myStepper(stepsPerRevolution, 13, 12, 14, 16);
 //Servidor telnet
 WiFiServer telnetServer(23);
@@ -41,7 +40,6 @@ WiFiClient serverClient;
 WiFiConfigurator configurator;
 
 bool dnsConnection = false;
-const int stepsPerRevolution = 200;
 
 void callback(char *topic, byte *payload, unsigned int length);
 int calcular_porcentaje(int &numerador, int &denominador);
@@ -53,9 +51,6 @@ void setup()
   delay(15);
   configurator.beginWiFiConnection(ssid, password, "Prrito");
   delay(15);
-  // if (mdns.begin(dns, WiFi.localIP())) {
-  //   dnsConnection = true;
-  // }
   if (configurator.beginMDNSService(dns))
   {
     dnsConnection = true;
