@@ -4,11 +4,11 @@ WiFiConfigurator::~WiFiConfigurator()
 {
 }
 
-void WiFiConfigurator::beginWiFi(const char *ssid, const char *password)
+void WiFiConfigurator::beginWiFiConnection(const char *ssid, const char *password)
 {
     WiFi.begin(ssid, password);
 
-    //Wait until connection has been stablished
+    //Wait until the connection has been stablished
     while (WiFi.status() != WL_CONNECTED)
     {
         delay(500);
@@ -16,4 +16,13 @@ void WiFiConfigurator::beginWiFi(const char *ssid, const char *password)
 
     WiFiConfigurator::ssid = ssid;
     WiFiConfigurator::password = password;
+}
+
+bool WiFiConfigurator::beginMDNSService(const char *hostname)
+{
+    if (WiFiConfigurator::mDNSHandler.begin(hostname))
+    {
+        return true;
+    }
+    return true;
 }

@@ -16,7 +16,7 @@ const char *dns = "stepper-01";
 
 boolean debug = false;
 unsigned long startTime = millis();
-const char *str_status[] = {"WL_IDLE_STATUS",    "WL_NO_SSID_AVAIL",
+const char *str_status[] = {"WL_IDLE_STATUS", "WL_NO_SSID_AVAIL",
                             "WL_SCAN_COMPLETED", "WL_CONNECTED",
                             "WL_CONNECT_FAILED", "WL_CONNECTION_LOST",
                             "WL_DISCONNECTED"};
@@ -48,13 +48,18 @@ WiFiClient serverClient;
 
 WiFiConfigurator configurator;
 
-void setup() {
+void setup()
+{
   Serial.begin(115200);
   //setup_wifi();
   delay(15);
-  configurator.beginWiFi(ssid, password);
+  configurator.beginWiFiConnection(ssid, password);
   delay(15);
-  if (mdns.begin(dns, WiFi.localIP())) {
+  // if (mdns.begin(dns, WiFi.localIP())) {
+  //   dnsConnection = true;
+  // }
+  if (configurator.beginMDNSService(dns))
+  {
     dnsConnection = true;
   }
   delay(15);
@@ -85,14 +90,17 @@ void setup() {
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 
-  if (WiFi.status() == WL_CONNECTED) {
+  if (WiFi.status() == WL_CONNECTED)
+  {
     Serial.print("WiFi mode: ");
     Serial.println(str_mode[WiFi.getMode()]);
     Serial.print("Status: ");
     Serial.println(str_status[WiFi.status()]);
     // signal WiFi connect
     delay(300); // ms
-  } else {
+  }
+  else
+  {
     Serial.println("");
     Serial.println("WiFi connect failed, push RESET button.");
   }
@@ -105,7 +113,9 @@ void setup() {
   Serial.println(ESP.getFreeHeap());
 }
 
-void setup_wifi() {
+//No se está invocando
+void setup_wifi()
+{
 
   delay(10);
   // We start by connecting to a WiFi network
@@ -119,7 +129,8 @@ void setup_wifi() {
   WiFiManager wifiManager;
   //wifiManager.resetSettings();
 
-  if (!wifiManager.autoConnect("Prrito")) {
+  if (!wifiManager.autoConnect("Prrito"))
+  {
     Serial.println("failed to connect and hit timeout");
     // reset and try again, or maybe put it to deep sleep
     ESP.reset();
@@ -137,7 +148,8 @@ void setup_wifi() {
   Serial.println(WiFi.localIP());
 }
 
-void callback(char *topic, byte *payload, unsigned int length) {
+void callback(char *topic, byte *payload, unsigned int length)
+{
   int vueltas = 0, vueltasActual = 0;
   int sentidoPasos = stepsPerRevolution;
   String sentido = "";
@@ -151,16 +163,20 @@ void callback(char *topic, byte *payload, unsigned int length) {
   vueltas = root["vueltas"].as<int>();
   sentido = root["sentido"].as<String>();
 
-  if (!root.success()) {
+  if (!root.success())
+  {
     serverClient.println(
         "Hay un error en la instrucción. Revise de nuevo el formato.");
     root.printTo(Serial);
     return;
   }
 
-  if (sentido == CLOCKWISE) {
+  if (sentido == CLOCKWISE)
+  {
     write["sentido"] = CLOCKWISE;
-  } else if (sentido == COUNTERCLOCKWISE) {
+  }
+  else if (sentido == COUNTERCLOCKWISE)
+  {
     sentidoPasos *= -1;
     write["sentido"] = COUNTERCLOCKWISE;
   }
@@ -168,7 +184,8 @@ void callback(char *topic, byte *payload, unsigned int length) {
   write["progreso"] = porcentaje;
   write["estado"] = "girando";
   client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
-  do {
+  do
+  {
     serverClient.println("Iniciando paso.");
     delay(15);
     myStepper.step(sentidoPasos);
@@ -177,7 +194,8 @@ void callback(char *topic, byte *payload, unsigned int length) {
     vueltasActual++;
     porcentaje = calcular_porcentaje(vueltasActual, vueltas);
     write["progreso"] = porcentaje;
-    if ((porcentaje % 5) == 0) {
+    if ((porcentaje % 5) == 0)
+    {
       client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
     }
   } while (vueltasActual < vueltas);
@@ -186,16 +204,21 @@ void callback(char *topic, byte *payload, unsigned int length) {
   client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
 }
 
-void reconnect() {
+void reconnect()
+{
   // Loop until we're reconnected
-  while (!client.connected()) {
+  while (!client.connected())
+  {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
     if (client.connect("Pasito a pasito. Dale suavecito. Ba dum tss.", "semard",
-                       "semard2017")) {
+                       "semard2017"))
+    {
       Serial.println("connected");
       client.subscribe(INSTEPPER);
-    } else {
+    }
+    else
+    {
       Serial.print("failed, rc=");
       Serial.print(client.state());
       Serial.println(" try again in 5 seconds");
@@ -205,23 +228,30 @@ void reconnect() {
   }
 }
 
-int calcular_porcentaje(int &numerador, int &denominador) {
+int calcular_porcentaje(int &numerador, int &denominador)
+{
   return ((numerador * 100) / denominador);
 }
 
-void loop() {
+void loop()
+{
   ArduinoOTA.handle();
   telnetHandle();
-  if (!client.connected()) {
+  if (!client.connected())
+  {
     reconnect();
   }
   client.loop();
 }
 bool mensaje = false;
-void telnetHandle() {
-  if (telnetServer.hasClient()) {
-    if (!serverClient || !serverClient.connected()) {
-      if (serverClient) {
+void telnetHandle()
+{
+  if (telnetServer.hasClient())
+  {
+    if (!serverClient || !serverClient.connected())
+    {
+      if (serverClient)
+      {
         serverClient.stop();
         Serial.println("Telnet Client Stop");
       }
@@ -232,24 +262,30 @@ void telnetHandle() {
     }
   }
 
-  while (serverClient.available()) { // get data from Client
+  while (serverClient.available())
+  { // get data from Client
     Serial.write(serverClient.read());
   }
 
-  if (!mensaje) { // run every 2000 ms
+  if (!mensaje)
+  { // run every 2000 ms
     startTime = millis();
 
-    if (serverClient && serverClient.connected()) { // send data to Client
+    if (serverClient && serverClient.connected())
+    { // send data to Client
       serverClient.println("Conectado por telnet. Sos re-groso che.");
       serverClient.println("Un saludo para los mortales.");
-      if (WiFi.status() == WL_CONNECTED) {
+      if (WiFi.status() == WL_CONNECTED)
+      {
         serverClient.println("Conectado a: ");
         serverClient.println(WiFi.localIP());
       }
-      if (client.connected()) {
+      if (client.connected())
+      {
         serverClient.println("Conectado a MQTT");
       }
-      if (dnsConnection) {
+      if (dnsConnection)
+      {
         serverClient.println("Se logró establecer el dns");
       }
       mensaje = true;
