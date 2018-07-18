@@ -9,8 +9,8 @@
 #include "WiFiConfigurator.h"
 // Update these with values suitable for your network.
 
-const char *ssid = "MOMOLEAL";
-const char *password = "tatileal1";
+const char *ssid = "hola";
+const char *password = "hola";
 const char *mqtt_server = "192.168.0.34";
 const char *dns = "stepper-01";
 
@@ -53,7 +53,7 @@ void setup()
   Serial.begin(115200);
   //setup_wifi();
   delay(15);
-  configurator.beginWiFiConnection(ssid, password);
+  configurator.beginWiFiConnection(ssid, password, "Prrito");
   delay(15);
   // if (mdns.begin(dns, WiFi.localIP())) {
   //   dnsConnection = true;
