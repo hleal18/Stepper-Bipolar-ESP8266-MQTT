@@ -9,6 +9,11 @@
 #include "WiFiConfigurator.h"
 // Update these with values suitable for your network.
 
+#define INSTEPPER "inStepper"
+#define OUTSTEPPER "prrito"
+#define CLOCKWISE "clockwise"
+#define COUNTERCLOCKWISE "counterclockwise"
+
 const char *ssid = "hola";
 const char *password = "hola";
 const char *mqtt_server = "192.168.0.34";
@@ -24,34 +29,27 @@ const char *str_status[] = {"WL_IDLE_STATUS", "WL_NO_SSID_AVAIL",
 // provide text for the WiFi mode
 const char *str_mode[] = {"WIFI_OFF", "WIFI_STA", "WIFI_AP", "WIFI_AP_STA"};
 
+//Servicios para MQTT
 WiFiClient espClient;
 PubSubClient client(espClient);
-MDNSResponder mdns;
+//Clase para controlar el Stepper
+Stepper myStepper(stepsPerRevolution, 13, 12, 14, 16);
+//Servidor telnet
+WiFiServer telnetServer(23);
+WiFiClient serverClient;
+//Objeto configuratos para conexión Wifi, wifimanager y mdns
+WiFiConfigurator configurator;
+
 bool dnsConnection = false;
-
-#define INSTEPPER "inStepper"
-#define OUTSTEPPER "prrito"
-#define CLOCKWISE "clockwise"
-#define COUNTERCLOCKWISE "counterclockwise"
-
 const int stepsPerRevolution = 200;
 
-Stepper myStepper(stepsPerRevolution, 13, 12, 14, 16);
-
-void setup_wifi();
 void callback(char *topic, byte *payload, unsigned int length);
 int calcular_porcentaje(int &numerador, int &denominador);
 void telnetHandle();
 
-WiFiServer telnetServer(23);
-WiFiClient serverClient;
-
-WiFiConfigurator configurator;
-
 void setup()
 {
   Serial.begin(115200);
-  //setup_wifi();
   delay(15);
   configurator.beginWiFiConnection(ssid, password, "Prrito");
   delay(15);
@@ -111,41 +109,6 @@ void setup()
 
   Serial.print("Free Heap[B]: ");
   Serial.println(ESP.getFreeHeap());
-}
-
-//No se está invocando
-void setup_wifi()
-{
-
-  delay(10);
-  // We start by connecting to a WiFi network
-  Serial.println("Booting");
-  // WiFi.mode(WIFI_STA);
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-
-  // WiFi.begin(ssid, password);
-  WiFiManager wifiManager;
-  //wifiManager.resetSettings();
-
-  if (!wifiManager.autoConnect("Prrito"))
-  {
-    Serial.println("failed to connect and hit timeout");
-    // reset and try again, or maybe put it to deep sleep
-    ESP.reset();
-    delay(1000);
-  }
-
-  // while (WiFi.status() != WL_CONNECTED) {
-  //  delay(500);
-  //  Serial.print(".");
-  //}
-
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
 }
 
 void callback(char *topic, byte *payload, unsigned int length)
