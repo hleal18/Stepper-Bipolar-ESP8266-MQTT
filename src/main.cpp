@@ -6,10 +6,11 @@
 #include <PubSubClient.h>
 #include <Stepper.h>
 #include <WiFiManager.h>
+#include "WiFiConfigurator.h"
 // Update these with values suitable for your network.
 
-const char *ssid = "SEMARD";
-const char *password = "SEMARD123";
+const char *ssid = "MOMOLEAL";
+const char *password = "tatileal1";
 const char *mqtt_server = "192.168.0.34";
 const char *dns = "stepper-01";
 
@@ -45,9 +46,13 @@ void telnetHandle();
 WiFiServer telnetServer(23);
 WiFiClient serverClient;
 
+WiFiConfigurator configurator;
+
 void setup() {
   Serial.begin(115200);
-  setup_wifi();
+  //setup_wifi();
+  delay(15);
+  configurator.beginWiFi(ssid, password);
   delay(15);
   if (mdns.begin(dns, WiFi.localIP())) {
     dnsConnection = true;
