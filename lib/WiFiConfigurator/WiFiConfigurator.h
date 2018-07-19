@@ -10,13 +10,14 @@ class WiFiConfigurator
   private:
     const char *ssid;
     const char *password;
+    const char *hostname;
+    const char *accesspoint;
     MDNSResponder mDNSHandler;
 
   public:
     ~WiFiConfigurator();
-    void beginWiFiConnection(const char *ssid, const char *password);
-    void beginWiFiConnection(const char *ssid, const char *password, const char *wifiManagerService);
-    bool beginMDNSService(const char *hostname);
+    WiFiConfigurator(const char *ssid, const char *password = nullptr, const char *hostname = nullptr, const char *accesspoint = nullptr);
+    int initServices();
 };
 
 #endif

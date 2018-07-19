@@ -4,22 +4,37 @@ WiFiConfigurator::~WiFiConfigurator()
 {
 }
 
-void WiFiConfigurator::beginWiFiConnection(const char *ssid, const char *password)
+WiFiConfigurator::WiFiConfigurator(const char *ssid, const char *password, const char *hostname, const char *accesspoint)
+    : ssid(ssid), password(password), hostname(hostname), accesspoint(accesspoint)
 {
-    WiFi.begin(ssid, password);
-    //Wait until the connection has been stablished
-    delay(5000);
 }
 
-void WiFiConfigurator::beginWiFiConnection(const char *ssid, const char *password, const char *wifiManagerService)
+int WiFiConfigurator::initServices()
 {
-    beginWiFiConnection(ssid, password);
-
-    WiFiManager wifiManager;
-    if (WiFi.status() == WL_DISCONNECTED)
+    int attempts_count = 0;
+    //Conexión con ssid pero sin password
+    if (ssid && !password)
     {
+        WiFi.begin(ssid);
+    }
+    //Conexion con ssid y password
+    else if (ssid && password)
+    {
+        WiFi.begin(ssid, password);
+    }
+
+    while (attempts_count < 15 && WiFi.status() != WL_CONNECTED)
+    {
+        delay(500);
+        Serial.print(".");
+        attempts_count++;
+    }
+
+    if (accesspoint && WiFi.status() != WL_CONNECTED)
+    {
+        WiFiManager manager;
         Serial.println("Conexión no lograda.");
-        if (!wifiManager.autoConnect(wifiManagerService))
+        if (!manager.autoConnect(accesspoint))
         {
             Serial.println("failed to connect and hit timeout");
             // reset and try again, or maybe put it to deep sleep
@@ -27,13 +42,17 @@ void WiFiConfigurator::beginWiFiConnection(const char *ssid, const char *passwor
             delay(1000);
         }
     }
-}
 
-bool WiFiConfigurator::beginMDNSService(const char *hostname)
-{
-    if (WiFiConfigurator::mDNSHandler.begin(hostname))
+    //Servicio mMDNS
+    if (hostname)
     {
-        return true;
+        if (mDNSHandler.begin(hostname))
+        {
+            Serial.println("DNS iniciado");
+        }
+        else
+        {
+            Serial.println("DNS NO iniciado");
+        }
     }
-    return true;
 }

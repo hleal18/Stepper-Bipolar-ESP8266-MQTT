@@ -1,7 +1,6 @@
 #include "JsonStepper.h"
 #include <ArduinoJson.h>
 #include <ArduinoOTA.h>
-#include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 #include <Stepper.h>
 #include "WiFiConfigurator.h"
@@ -12,10 +11,11 @@
 #define CLOCKWISE "clockwise"
 #define COUNTERCLOCKWISE "counterclockwise"
 
-const char *ssid = "MOMOLEAL";
-const char *password = "tatileal1";
+const char *ssid = "hola";
+const char *password = "hola";
 const char *mqtt_server = "192.168.0.34";
 const char *dns = "stepper-01";
+const char *accesspoint = "stepper-01";
 
 boolean debug = false;
 unsigned long startTime = millis();
@@ -36,8 +36,9 @@ Stepper myStepper(stepsPerRevolution, 13, 12, 14, 16);
 //Servidor telnet
 WiFiServer telnetServer(23);
 WiFiClient serverClient;
-//Objeto configuratos para conexión Wifi, wifimanager y mdns
-WiFiConfigurator configurator;
+//Objeto configurador para servicios conexión y administración a red 
+//Wifi, wifimanager y mdns
+WiFiConfigurator configurator(ssid, password, dns, accesspoint);
 
 bool dnsConnection = false;
 
@@ -49,12 +50,7 @@ void setup()
 {
   Serial.begin(115200);
   delay(15);
-  configurator.beginWiFiConnection(ssid, password, "Prrito");
-  delay(15);
-  if (configurator.beginMDNSService(dns))
-  {
-    dnsConnection = true;
-  }
+  configurator.initServices();
   delay(15);
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
