@@ -2,6 +2,7 @@
 #include <ArduinoJson.h>
 #include <ArduinoOTA.h>
 #include <PubSubClient.h>
+#include "MQTTClient.h"
 #include <Stepper.h>
 #include "WiFiConfigurator.h"
 // Update these with values suitable for your network.
@@ -14,6 +15,7 @@
 const char *ssid = "hola";
 const char *password = "hola";
 const char *mqtt_server = "192.168.0.34";
+int port = 1883;
 const char *dns = "stepper-01";
 const char *accesspoint = "stepper-01";
 
@@ -27,10 +29,14 @@ const char *str_status[] = {"WL_IDLE_STATUS", "WL_NO_SSID_AVAIL",
 // provide text for the WiFi mode
 const char *str_mode[] = {"WIFI_OFF", "WIFI_STA", "WIFI_AP", "WIFI_AP_STA"};
 
-//Servicios para MQTT
-WiFiClient espClient;
-PubSubClient client(espClient);
-//Clase para controlar el Stepper
+// WiFiClient espClient;
+// PubSubClient client(espClient);
+void callback(char *topic, byte *payload, unsigned int length);
+MQTTClient client(mqtt_server, port, INSTEPPER, OUTSTEPPER, callback);
+
+MDNSResponder mdns;
+bool dnsConnection = false;
+
 const int stepsPerRevolution = 200;
 Stepper myStepper(stepsPerRevolution, 13, 12, 14, 16);
 //Servidor telnet
@@ -52,8 +58,8 @@ void setup()
   delay(15);
   configurator.initServices();
   delay(15);
-  client.setServer(mqtt_server, 1883);
-  client.setCallback(callback);
+  // client.setServer(mqtt_server, 1883);
+  // client.setCallback(callback);
   myStepper.setSpeed(50);
 
   ArduinoOTA.onStart([]() { Serial.println("Start"); });
@@ -137,7 +143,7 @@ void callback(char *topic, byte *payload, unsigned int length)
   write["vueltas"] = vueltas;
   write["progreso"] = porcentaje;
   write["estado"] = "girando";
-  client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
+  client.publish(jsonStepper.encode_json(write).c_str());
   do
   {
     serverClient.println("Iniciando paso.");
@@ -150,37 +156,44 @@ void callback(char *topic, byte *payload, unsigned int length)
     write["progreso"] = porcentaje;
     if ((porcentaje % 5) == 0)
     {
-      client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
+      client.publish(jsonStepper.encode_json(write).c_str());
     }
   } while (vueltasActual < vueltas);
   write["estado"] = "finalizado";
   serverClient.println(jsonStepper.encode_json(write));
-  client.publish(OUTSTEPPER, jsonStepper.encode_json(write).c_str());
+  client.publish(jsonStepper.encode_json(write).c_str());
 }
 
-void reconnect()
-{
-  // Loop until we're reconnected
-  while (!client.connected())
-  {
-    Serial.print("Attempting MQTT connection...");
-    // Attempt to connect
-    if (client.connect("Pasito a pasito. Dale suavecito. Ba dum tss.", "semard",
-                       "semard2017"))
-    {
-      Serial.println("connected");
-      client.subscribe(INSTEPPER);
-    }
-    else
-    {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
-      // Wait 5 seconds before retrying
-      delay(5000);
-    }
-  }
-}
+// void callback(char *topic, byte *payload, unsigned int length)
+// {
+//   Serial.println("Callback llamado");
+//   Serial.println("IPlocal");
+//   Serial.println(WiFi.localIP());
+// }
+
+// void reconnect()
+// {
+//   // Loop until we're reconnected
+//   while (!client.connected())
+//   {
+//     Serial.print("Attempting MQTT connection...");
+//     // Attempt to connect
+//     if (client.connect("Pasito a pasito. Dale suavecito. Ba dum tss.", "semard",
+//                        "semard2017"))
+//     {
+//       Serial.println("connected");
+//       client.subscribe(INSTEPPER);
+//     }
+//     else
+//     {
+//       Serial.print("failed, rc=");
+//       Serial.print(client.state());
+//       Serial.println(" try again in 5 seconds");
+//       // Wait 5 seconds before retrying
+//       delay(5000);
+//     }
+//   }
+// }
 
 int calcular_porcentaje(int &numerador, int &denominador)
 {
@@ -191,11 +204,11 @@ void loop()
 {
   ArduinoOTA.handle();
   telnetHandle();
-  if (!client.connected())
-  {
-    reconnect();
-  }
-  client.loop();
+  // if (!client.connected())
+  // {
+  //   reconnect();
+  // }
+  client.listen();
 }
 bool mensaje = false;
 void telnetHandle()
@@ -234,10 +247,10 @@ void telnetHandle()
         serverClient.println("Conectado a: ");
         serverClient.println(WiFi.localIP());
       }
-      if (client.connected())
-      {
-        serverClient.println("Conectado a MQTT");
-      }
+      // if (client.connected())
+      // {
+      //   serverClient.println("Conectado a MQTT");
+      // }
       if (dnsConnection)
       {
         serverClient.println("Se logró establecer el dns");
