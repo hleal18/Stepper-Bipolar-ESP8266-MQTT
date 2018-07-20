@@ -21,7 +21,9 @@ class Blackout
 
     ~Blackout();
     Blackout(const char *name, const int stepsPerRevolution, const int speed, int pin1, int pin2, int pin3, int pin4);
+
     void handleRoller(char *topic, byte *payload, unsigned int length);
+    int calcular_porcentaje(int &numerador, int &denominador) { return ((numerador * 100) / denominador); }
 };
 
 #endif

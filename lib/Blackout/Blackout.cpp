@@ -52,7 +52,8 @@ void Blackout::handleRoller(char *topic, byte *payload, unsigned int length)
     write["vueltas"] = vueltas;
     write["progreso"] = porcentaje;
     write["estado"] = "girando";
-    client.publish(jsonStepper.encode_json(write).c_str());
+    //client.publish(jsonStepper.encode_json(write).c_str());
+    Serial.println(jsonStepper.encode_json(write).c_str());
     do
     {
         //serverClient.println("Iniciando paso.");
@@ -65,10 +66,12 @@ void Blackout::handleRoller(char *topic, byte *payload, unsigned int length)
         write["progreso"] = porcentaje;
         if ((porcentaje % 5) == 0)
         {
-            client.publish(jsonStepper.encode_json(write).c_str());
+            //client.publish(jsonStepper.encode_json(write).c_str());
+            Serial.println(jsonStepper.encode_json(write).c_str());
         }
     } while (vueltasActual < vueltas);
     write["estado"] = "finalizado";
     //serverClient.println(jsonStepper.encode_json(write));
-    client.publish(jsonStepper.encode_json(write).c_str());
+    //client.publish(jsonStepper.encode_json(write).c_str());
+    Serial.println(jsonStepper.encode_json(write).c_str());
 }

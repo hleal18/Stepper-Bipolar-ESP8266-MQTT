@@ -15,6 +15,9 @@ class WiFiConfigurator
     MDNSResponder mDNSHandler;
 
   public:
+    static const char *str_status[];
+    static const char *str_mode[];
+
     ~WiFiConfigurator();
     WiFiConfigurator(const char *ssid, const char *password = nullptr, const char *hostname = nullptr, const char *accesspoint = nullptr);
     int initServices();

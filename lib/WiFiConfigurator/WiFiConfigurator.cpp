@@ -1,5 +1,22 @@
 #include "WiFiConfigurator.h"
 
+const char *WiFiConfigurator::str_status[] =
+    {
+        "WL_IDLE_STATUS",
+        "WL_NO_SSID_AVAIL",
+        "WL_SCAN_COMPLETED",
+        "WL_CONNECTED",
+        "WL_CONNECT_FAILED",
+        "WL_CONNECTION_LOST",
+        "WL_DISCONNECTED"};
+
+const char *WiFiConfigurator::str_mode[] =
+    {
+        "WIFI_OFF",
+        "WIFI_STA",
+        "WIFI_AP",
+        "WIFI_AP_STA"};
+
 WiFiConfigurator::~WiFiConfigurator()
 {
 }
