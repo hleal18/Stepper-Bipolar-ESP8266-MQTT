@@ -1,5 +1,3 @@
-#include "JsonStepper.h"
-#include <ArduinoJson.h>
 #include <ArduinoOTA.h>
 #include "MQTTClient.h"
 #include "Blackout.h"
@@ -14,7 +12,7 @@
 const char *ssid = "hola";
 const char *password = "hola";
 const char *mqtt_server = "192.168.0.34";
-int port = 1883;
+const int port = 1883;
 const char *dns = "stepper-01";
 const char *accesspoint = "stepper-01";
 

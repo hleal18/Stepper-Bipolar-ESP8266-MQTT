@@ -26,7 +26,7 @@ WiFiConfigurator::WiFiConfigurator(const char *ssid, const char *password, const
 {
 }
 
-int WiFiConfigurator::initServices()
+void WiFiConfigurator::initServices()
 {
     int attempts_count = 0;
     //Conexión con ssid pero sin password

@@ -20,7 +20,7 @@ class WiFiConfigurator
 
     ~WiFiConfigurator();
     WiFiConfigurator(const char *ssid, const char *password = nullptr, const char *hostname = nullptr, const char *accesspoint = nullptr);
-    int initServices();
+    void initServices();
 };
 
 #endif
