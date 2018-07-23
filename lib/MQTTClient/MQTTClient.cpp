@@ -9,7 +9,7 @@ MQTTClient::~MQTTClient()
 {
 }
 
-void MQTTClient::listen()
+void MQTTClient::handle()
 {
     if (!client.connected())
     {
