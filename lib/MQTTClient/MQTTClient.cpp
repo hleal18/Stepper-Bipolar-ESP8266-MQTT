@@ -1,11 +1,8 @@
 #include "MQTTClient.h"
 
 MQTTClient::MQTTClient(const char *domain, uint16_t port, const char *inTopic, const char *outTopic, WiFiClient wificlient, std::function<void(char *, uint8_t *, unsigned int)> callback)
-    : domain(domain), port(port), inTopic(inTopic), outTopic(outTopic), client(wificlient)
+    : domain(domain), port(port), inTopic(inTopic), outTopic(outTopic), client(domain, port, callback, wificlient)
 {
-    client.setServer(domain, port);
-    client.subscribe(inTopic);
-    client.setCallback(callback);
 }
 
 MQTTClient::~MQTTClient()
