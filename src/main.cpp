@@ -22,10 +22,7 @@ const int motor_speed = 50;
 
 Blackout blind_roller(device_name, steps_per_revolution, motor_speed, 13, 12, 14, 16);
 WiFiConfigurator configurator(ssid, password, dns, accesspoint);
-
-WiFiClient wificlient;
-MQTTClient client(mqtt_server, mqtt_port, INSTEPPER, OUTSTEPPER, wificlient, Blackout::bindedHandleRoller(blind_roller));
-
+MQTTClient client(mqtt_server, mqtt_port, INSTEPPER, OUTSTEPPER, Blackout::bindedHandleRoller(blind_roller));
 OTAUploader uploader;
 TelnetDebugger debugger;
 
