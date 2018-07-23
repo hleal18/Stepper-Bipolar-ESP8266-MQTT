@@ -9,31 +9,25 @@
 #define CLOCKWISE "clockwise"
 #define COUNTERCLOCKWISE "counterclockwise"
 
+const char *device_name = "stepper-01";
 const char *ssid = "hola";
 const char *password = "hola";
 const char *mqtt_server = "192.168.0.34";
-const int port = 1883;
+const int mqtt_port = 1883;
 const char *dns = "stepper-01";
 const char *accesspoint = "stepper-01";
 
-const int stepsPerRevolution = 200;
-const int motorSpeed = 50;
+const int steps_per_revolution = 200;
+const int motor_speed = 50;
 
-void callback(char *topic, byte *payload, unsigned int length);
-
-Blackout blind_roller("stepper-01", stepsPerRevolution, motorSpeed, 13, 12, 14, 16);
+Blackout blind_roller(device_name, steps_per_revolution, motor_speed, 13, 12, 14, 16);
 WiFiConfigurator configurator(ssid, password, dns, accesspoint);
 
 WiFiClient wificlient;
-MQTTClient client(mqtt_server, port, INSTEPPER, OUTSTEPPER, wificlient, callback);
+MQTTClient client(mqtt_server, mqtt_port, INSTEPPER, OUTSTEPPER, wificlient, Blackout::bindedHandleRoller(blind_roller));
 
 OTAUploader uploader;
 TelnetDebugger debugger;
-
-void callback(char *topic, byte *payload, unsigned int length)
-{
-    blind_roller.handleRoller(topic, payload, length);
-}
 
 void setup()
 {
@@ -42,15 +36,9 @@ void setup()
     configurator.initServices();
     delay(15);
     uploader.initService();
-
-    Serial.println("Ready");
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
-
+    delay(15);    
     debugger.initService();
-
-    Serial.print("Free Heap[B]: ");
-    Serial.println(ESP.getFreeHeap());
+    delay(15);
 }
 
 void loop()

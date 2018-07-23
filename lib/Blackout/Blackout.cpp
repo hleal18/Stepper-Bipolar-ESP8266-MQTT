@@ -75,3 +75,8 @@ void Blackout::handleRoller(char *topic, byte *payload, unsigned int length)
     //client.publish(jsonStepper.encode_json(write).c_str());
     Serial.println(jsonStepper.encode_json(write).c_str());
 }
+
+std::function<void (char *, uint8_t *, unsigned int) > Blackout::bindedHandleRoller(Blackout blind_roller)
+{
+    return std::bind(&Blackout::handleRoller, blind_roller, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+}

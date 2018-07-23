@@ -24,6 +24,8 @@ class Blackout
 
     void handleRoller(char *topic, byte *payload, unsigned int length);
     int calcular_porcentaje(int &numerador, int &denominador) { return ((numerador * 100) / denominador); }
+    //Returns a binded version of handleRoller, useful when passing it as a callback
+    static std::function<void (char *, uint8_t *, unsigned int) > bindedHandleRoller(Blackout blind_roller);
 };
 
 #endif
