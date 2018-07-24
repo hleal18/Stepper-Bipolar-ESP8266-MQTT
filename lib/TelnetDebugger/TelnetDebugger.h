@@ -15,8 +15,9 @@ class TelnetDebugger
         ~TelnetDebugger();
         void handle();
         void initService();
-
-
+        void println(const char * message);
 };
+
+extern TelnetDebugger Debugger;
 
 #endif

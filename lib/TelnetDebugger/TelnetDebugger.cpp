@@ -38,11 +38,10 @@ void TelnetDebugger::handle()
 
         if (telnetClient && telnetClient.connected())
         { // send data to Client
-            telnetClient.println("Conectado por telnet. Sos re-groso che.");
-            telnetClient.println("Un saludo para los mortales.");
+            telnetClient.println("Debugger mode with Telnet");
             if (WiFi.status() == WL_CONNECTED)
             {
-                telnetClient.println("Conectado a: ");
+                telnetClient.println("Connected to: ");
                 telnetClient.println(WiFi.localIP());
             }
             // if (client.connected())
@@ -61,3 +60,10 @@ void TelnetDebugger::initService()
     telnetServer.setNoDelay(true);
     Serial.println("Please connect Telnet Client, exit with ^] and 'quit'");
 }
+
+void TelnetDebugger::println(const char *message)
+{
+    telnetClient.println(message);
+}
+
+TelnetDebugger Debugger;

@@ -6,6 +6,7 @@
 #include <ESP8266WiFi.h>
 #include <Stepper.h>
 #include "JsonStepper.h"
+#include "TelnetDebugger.h"
 
 class Blackout
 {

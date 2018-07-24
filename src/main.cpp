@@ -4,8 +4,8 @@
 #include "WiFiConfigurator.h"
 #include "TelnetDebugger.h"
 
-#define INSTEPPER "inStepper"
-#define OUTSTEPPER "prrito"
+#define INSTEPPER "inStepper-01"
+#define OUTSTEPPER "outStepper-01"
 #define CLOCKWISE "clockwise"
 #define COUNTERCLOCKWISE "counterclockwise"
 
@@ -24,7 +24,6 @@ Blackout blind_roller(device_name, steps_per_revolution, motor_speed, 13, 12, 14
 WiFiConfigurator configurator(ssid, password, dns, accesspoint);
 MQTTClient client(mqtt_server, mqtt_port, INSTEPPER, OUTSTEPPER, Blackout::bindedHandleRoller(blind_roller));
 OTAUploader uploader;
-TelnetDebugger debugger;
 
 void setup()
 {
@@ -34,13 +33,13 @@ void setup()
     delay(15);
     uploader.initService();
     delay(15);    
-    debugger.initService();
+    Debugger.initService();
     delay(15);
 }
 
 void loop()
 {
     uploader.handle();
-    debugger.handle();
+    Debugger.handle();
     client.handle();
 }

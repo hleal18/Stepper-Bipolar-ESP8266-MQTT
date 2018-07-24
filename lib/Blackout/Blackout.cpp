@@ -32,13 +32,12 @@ void Blackout::handleRoller(char *topic, byte *payload, unsigned int length)
     vueltas = root["vueltas"].as<int>();
     sentido = root["sentido"].as<String>();
 
-    // if (!root.success())
-    // {
-    //     serverClient.println(
-    //         "Hay un error en la instrucción. Revise de nuevo el formato.");
-    //     root.printTo(Serial);
-    //     return;
-    // }
+    if (!root.success())
+    {
+        Debugger.println("Hay un error en la instrucción. Revise de nuevo el formato.");
+        root.printTo(Serial);
+        return;
+    }
 
     if (sentido == CLOCKWISE)
     {
@@ -54,6 +53,7 @@ void Blackout::handleRoller(char *topic, byte *payload, unsigned int length)
     write["estado"] = "girando";
     //client.publish(jsonStepper.encode_json(write).c_str());
     Serial.println(jsonStepper.encode_json(write).c_str());
+    Debugger.println(jsonStepper.encode_json(write).c_str());
     do
     {
         //serverClient.println("Iniciando paso.");
@@ -68,10 +68,11 @@ void Blackout::handleRoller(char *topic, byte *payload, unsigned int length)
         {
             //client.publish(jsonStepper.encode_json(write).c_str());
             Serial.println(jsonStepper.encode_json(write).c_str());
+            Debugger.println(jsonStepper.encode_json(write).c_str());
         }
     } while (vueltasActual < vueltas);
     write["estado"] = "finalizado";
-    //serverClient.println(jsonStepper.encode_json(write));
+    Debugger.println(jsonStepper.encode_json(write).c_str());
     //client.publish(jsonStepper.encode_json(write).c_str());
     Serial.println(jsonStepper.encode_json(write).c_str());
 }
