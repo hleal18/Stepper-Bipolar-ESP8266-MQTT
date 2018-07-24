@@ -28,7 +28,10 @@ WiFiConfigurator::WiFiConfigurator(const char *ssid, const char *password, const
 
 void WiFiConfigurator::initServices()
 {
-    int attempts_count = 0;
+    int attempt_count = 0;
+    WiFiManager manager;
+    // WiFiManagerParameter custom_mqtt_server("server", "mqtt server", "192.168.0.34", 40);
+    // WiFiManagerParameter custom_mqtt_port("port", "mqtt port", "1883", 5);
     //Conexión con ssid pero sin password
     if (ssid && !password)
     {
@@ -40,26 +43,34 @@ void WiFiConfigurator::initServices()
         WiFi.begin(ssid, password);
     }
 
-    while (attempts_count < 15 && WiFi.status() != WL_CONNECTED)
+    while (attempt_count < 15 && WiFi.status() != WL_CONNECTED)
     {
         delay(500);
         Serial.print(".");
-        attempts_count++;
+        attempt_count++;
     }
 
     if (accesspoint && WiFi.status() != WL_CONNECTED)
     {
-        WiFiManager manager;
         Serial.println("Conexión no lograda.");
+        // manager.addParameter(&custom_mqtt_server);
+        // manager.addParameter(&custom_mqtt_port);
+        manager.setConnectTimeout(30);
         if (!manager.autoConnect(accesspoint))
         {
             Serial.println("failed to connect and hit timeout");
+            delay(3000);
             // reset and try again, or maybe put it to deep sleep
             ESP.reset();
             delay(1000);
         }
     }
 
+    Serial.println("Conectado a WiFi.");
+    // Serial.print("Valores de servidor MQTT: ");
+    // Serial.println(custom_mqtt_server.getValue());
+    // Serial.print("Valor del puerto: ");
+    // Serial.println(custom_mqtt_port.getValue());
     //Servicio mMDNS
     if (hostname)
     {

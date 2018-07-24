@@ -20,12 +20,16 @@ void MQTTClient::handle()
 
 void MQTTClient::reconnect()
 {
-    while (!client.connected())
+    unsigned int attempt_count = 0;
+    WiFiManager wifimanager;
+    WiFiManagerParameter custom_mqtt_server("server", "mqtt_server", "0.0.0.0", 40);
+    WiFiManagerParameter custom_mqtt_port("port", "mqtt_port", "1883", 5);
+
+    while (!client.connected() && attempt_count <= 10)
     {
         Serial.print("Attempting MQTT connection...");
         // Attempt to connect
-        if (client.connect("Pasito a pasito. Dale suavecito. Ba dum tss.", "semard",
-                           "semard2017"))
+        if (client.connect("stepper-01", "hleal", "semard"))
         {
             Serial.println("connected");
             client.subscribe(inTopic);
@@ -38,6 +42,28 @@ void MQTTClient::reconnect()
             // Wait 5 seconds before retrying
             delay(5000);
         }
+        attempt_count++;
+    }
+    if (attempt_count > 3)
+    {
+        Serial.println("Se superaron los intentos: iniciando AP");
+        wifimanager.addParameter(&custom_mqtt_server);
+        wifimanager.addParameter(&custom_mqtt_port);
+        if (!wifimanager.startConfigPortal("stepper-01"))
+        {
+            Serial.println("Failed to connect and hit timeout");
+            delay(3000);
+            ESP.reset();
+            delay(5000);
+        }
+        Serial.println("Se finalizó la configuración");
+        Serial.print("Valor del server mqtt");
+        Serial.println(custom_mqtt_server.getValue());
+        Serial.print("Valor del puerto mqtt");
+        Serial.println(custom_mqtt_port.getValue());
+        domain = custom_mqtt_server.getValue();
+        port = (int)custom_mqtt_port.getValue();
+        client.setServer(domain, port);
     }
 }
 

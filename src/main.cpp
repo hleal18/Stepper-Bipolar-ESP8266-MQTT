@@ -10,8 +10,8 @@
 #define COUNTERCLOCKWISE "counterclockwise"
 
 const char *device_name = "stepper-01";
-const char *ssid = "hola";
-const char *password = "hola";
+const char *ssid = "MOMOLEAL";
+const char *password = "tatileal1";
 const char *mqtt_server = "192.168.0.34";
 const int mqtt_port = 1883;
 const char *dns = "stepper-01";

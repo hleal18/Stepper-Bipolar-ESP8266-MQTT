@@ -4,6 +4,7 @@
 
 #include <PubSubClient.h>
 #include <WiFiClient.h>
+#include <WiFiManager.h>
 
 class MQTTClient
 {
